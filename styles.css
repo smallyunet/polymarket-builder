@@ -517,7 +517,7 @@ th, td {
   vertical-align: middle;
 }
 
-th {
+.leaderboard-shell th {
   position: sticky;
   top: 72px; /* Aligns just below the 72px topbar */
   background: var(--panel-solid);
@@ -534,7 +534,6 @@ th {
 th.sortable {
   cursor: pointer;
   user-select: none;
-  position: relative;
   padding-right: 22px !important;
   transition: all 0.25s ease;
 }
@@ -892,6 +891,9 @@ tbody tr:nth-child(3) .rank-cell {
 }
 
 .trades-table th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: rgba(22, 29, 47, 0.9);
   border-bottom: 1px solid var(--border);
   font-family: 'Outfit', sans-serif;
@@ -1249,7 +1251,7 @@ tbody tr:nth-child(3) .rank-cell {
   .table-wrap {
     overflow-x: auto;
   }
-  th {
+  .leaderboard-shell th {
     position: static;
   }
 }
