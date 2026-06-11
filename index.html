@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polymarket Builder Explorer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">P</span>
+        <span>Polymarket Builders</span>
+      </a>
+      <nav>
+        <a href="https://builders.polymarket.com/" target="_blank" rel="noreferrer">Builders</a>
+        <a href="https://docs.polymarket.com/api-reference/builders/get-aggregated-builder-leaderboard" target="_blank" rel="noreferrer">API Docs</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">BUILDER PROGRAM DATA EXPLORER</p>
+          <h1>Builder leaderboard, activity, and attributed trades.</h1>
+        </div>
+        <div class="hero-panel" aria-live="polite">
+          <span class="panel-label">Loaded Builders</span>
+          <strong id="loadedBuilders">0</strong>
+          <span id="lastUpdated">Waiting for data</span>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Query controls">
+        <div class="segmented" role="tablist" aria-label="Time period">
+          <button class="active" data-period="DAY" type="button">Day</button>
+          <button data-period="WEEK" type="button">Week</button>
+          <button data-period="MONTH" type="button">Month</button>
+          <button data-period="ALL" type="button">All</button>
+        </div>
+        <label class="search-box">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Builder name or code" />
+        </label>
+        <label class="toggle">
+          <input id="verifiedOnly" type="checkbox" />
+          <span>Verified only</span>
+        </label>
+        <button id="refreshButton" class="primary" type="button">Refresh</button>
+      </section>
+
+      <section class="summary-grid" aria-label="Summary metrics">
+        <article>
+          <span>Total Volume</span>
+          <strong id="totalVolume">$0</strong>
+        </article>
+        <article>
+          <span>Active Users</span>
+          <strong id="totalUsers">0</strong>
+        </article>
+        <article>
+          <span>Verified Builders</span>
+          <strong id="verifiedCount">0</strong>
+        </article>
+        <article>
+          <span>Best 24h Volume</span>
+          <strong id="bestDay">$0</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="leaderboard-shell">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">LEADERBOARD</p>
+              <h2>Projects</h2>
+            </div>
+            <button id="loadMoreBuilders" type="button">Load more</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Project</th>
+                  <th>Volume</th>
+                  <th>Users</th>
+                  <th>Builder Code</th>
+                </tr>
+              </thead>
+              <tbody id="builderRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="detail-panel">
+          <div id="emptyDetail" class="empty-state">
+            <span>Select a project</span>
+            <p>Click any builder row to fetch attributed trades and inspect all fields returned by the API.</p>
+          </div>
+
+          <div id="detailContent" class="hidden">
+            <div class="detail-head">
+              <div class="avatar large" id="detailAvatar"></div>
+              <div>
+                <p class="eyebrow">SELECTED BUILDER</p>
+                <h2 id="detailName">Builder</h2>
+                <p id="detailCode" class="mono"></p>
+              </div>
+            </div>
+
+            <div class="detail-stats">
+              <article>
+                <span>Leaderboard Volume</span>
+                <strong id="detailVolume">$0</strong>
+              </article>
+              <article>
+                <span>Leaderboard Users</span>
+                <strong id="detailUsers">0</strong>
+              </article>
+              <article>
+                <span>Loaded Trades</span>
+                <strong id="tradeCount">0</strong>
+              </article>
+              <article>
+                <span>Loaded Trade USDC</span>
+                <strong id="tradeVolume">$0</strong>
+              </article>
+            </div>
+
+            <div class="query-strip">
+              <label>
+                <span>After</span>
+                <input id="afterInput" type="datetime-local" />
+              </label>
+              <label>
+                <span>Before</span>
+                <input id="beforeInput" type="datetime-local" />
+              </label>
+              <button id="reloadTrades" type="button">Reload trades</button>
+            </div>
+
+            <div class="trade-actions">
+              <button id="loadNextTrades" type="button">Load next page</button>
+              <button id="downloadJson" type="button">Download JSON</button>
+              <button id="downloadCsv" type="button">Download CSV</button>
+            </div>
+
+            <div class="detail-stats compact">
+              <article>
+                <span>Unique Owners</span>
+                <strong id="uniqueOwners">0</strong>
+              </article>
+              <article>
+                <span>Markets</span>
+                <strong id="uniqueMarkets">0</strong>
+              </article>
+              <article>
+                <span>Maker Trades</span>
+                <strong id="makerTrades">0</strong>
+              </article>
+              <article>
+                <span>Taker Trades</span>
+                <strong id="takerTrades">0</strong>
+              </article>
+            </div>
+
+            <div class="timeline">
+              <div class="section-heading slim">
+                <div>
+                  <p class="eyebrow">VOLUME SERIES</p>
+                  <h3>Daily records from /builders/volume</h3>
+                </div>
+              </div>
+              <div id="volumeBars" class="bars"></div>
+            </div>
+
+            <div class="raw-data">
+              <div class="section-heading slim">
+                <div>
+                  <p class="eyebrow">RAW API DATA</p>
+                  <h3>Builder trades</h3>
+                </div>
+                <span id="cursorState" class="muted">No cursor</span>
+              </div>
+              <pre id="rawTrades">[]</pre>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <template id="builderRowTemplate">
+      <tr>
+        <td class="rank"></td>
+        <td>
+          <div class="builder-cell">
+            <div class="avatar"></div>
+            <div>
+              <strong class="builder-name"></strong>
+              <span class="builder-status"></span>
+            </div>
+          </div>
+        </td>
+        <td class="volume"></td>
+        <td class="users"></td>
+        <td class="code mono"></td>
+      </tr>
+    </template>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
