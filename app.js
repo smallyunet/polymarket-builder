@@ -14,12 +14,6 @@ const state = {
 };
 
 const els = {
-  loadedBuilders: document.querySelector("#loadedBuilders"),
-  lastUpdated: document.querySelector("#lastUpdated"),
-  totalVolume: document.querySelector("#totalVolume"),
-  totalUsers: document.querySelector("#totalUsers"),
-  verifiedCount: document.querySelector("#verifiedCount"),
-  bestDay: document.querySelector("#bestDay"),
   builderRows: document.querySelector("#builderRows"),
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
@@ -94,6 +88,15 @@ function positionTooltip(e) {
 
 function hideTooltip() {
   globalTooltip.classList.add("hidden");
+}
+
+function parseTradeTime(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  const date = Number.isFinite(numeric)
+    ? new Date(numeric < 1e12 ? numeric * 1000 : numeric)
+    : new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
 }
 
 function number(value) {
@@ -172,18 +175,6 @@ function filteredBuilders() {
       builder.builderCode?.toLowerCase().includes(query)
     );
   });
-}
-
-function renderSummary() {
-  const totalVolume = state.builders.reduce((sum, builder) => sum + number(builder.volume), 0);
-  const totalUsers = state.builders.reduce((sum, builder) => sum + number(builder.activeUsers), 0);
-  const bestDay = state.volumes.reduce((max, row) => Math.max(max, number(row.volume)), 0);
-  els.loadedBuilders.textContent = fmtInt.format(state.builders.length);
-  els.totalVolume.textContent = fmtCompactUsd.format(totalVolume);
-  els.totalUsers.textContent = fmtInt.format(totalUsers);
-  els.verifiedCount.textContent = fmtInt.format(state.builders.filter((builder) => builder.verified).length);
-  els.bestDay.textContent = fmtCompactUsd.format(bestDay);
-  els.lastUpdated.textContent = `Updated ${new Date().toLocaleString()}`;
 }
 
 function filteredAndSortedBuilders() {
@@ -556,12 +547,13 @@ function renderTrades() {
     for (const trade of state.trades) {
       const row = els.tradeRowTemplate.content.firstElementChild.cloneNode(true);
       
-      const timeStr = new Date(trade.matchTime || trade.createdAt).toLocaleString(undefined, {
+      const tradeTime = parseTradeTime(trade.matchTime) || parseTradeTime(trade.createdAt);
+      const timeStr = tradeTime ? tradeTime.toLocaleString(undefined, {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit"
-      });
+      }) : "-";
       row.querySelector(".trade-time").textContent = timeStr;
       
       const sideEl = row.querySelector(".trade-side");
@@ -612,7 +604,6 @@ function renderDetail() {
 }
 
 function render() {
-  renderSummary();
   renderBuilders();
   renderDetail();
 }
@@ -668,9 +659,13 @@ async function loadVolumes() {
   }
 }
 
-function unixFromInput(input) {
+function unixFromInput(input, boundary = "start") {
   if (!input.value) return "";
-  const ms = new Date(input.value).getTime();
+  const [year, month, day] = input.value.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const ms = boundary === "end"
+    ? new Date(year, month - 1, day, 23, 59, 59).getTime()
+    : new Date(year, month - 1, day, 0, 0, 0).getTime();
   return Number.isFinite(ms) ? String(Math.floor(ms / 1000)) : "";
 }
 
@@ -681,8 +676,8 @@ async function loadTrades({ append = false } = {}) {
   els.loadNextTrades.disabled = true;
   try {
     const params = new URLSearchParams({ builder_code: state.selected.builderCode });
-    const after = unixFromInput(els.afterInput);
-    const before = unixFromInput(els.beforeInput);
+    const after = unixFromInput(els.afterInput, "start");
+    const before = unixFromInput(els.beforeInput, "end");
     if (after) params.set("after", after);
     if (before) params.set("before", before);
     if (append && state.nextCursor) params.set("next_cursor", state.nextCursor);

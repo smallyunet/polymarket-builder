@@ -31,56 +31,6 @@
           <p class="eyebrow">BUILDER PROGRAM DATA EXPLORER</p>
           <h1>Builder leaderboard, activity, and attributed trades.</h1>
         </div>
-        <div class="hero-panel" aria-live="polite">
-          <div class="hero-panel-content">
-            <span class="panel-label">Loaded Builders</span>
-            <strong id="loadedBuilders">0</strong>
-            <span id="lastUpdated">Waiting for data</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="summary-grid" aria-label="Summary metrics">
-        <article class="metric-card spotlight-card">
-          <div class="metric-card-header">
-            <span>Total Volume</span>
-            <div class="metric-icon-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-          </div>
-          <strong id="totalVolume">$0</strong>
-          <span class="metric-trend">Cumulative attribution</span>
-        </article>
-        <article class="metric-card spotlight-card">
-          <div class="metric-card-header">
-            <span>Active Users</span>
-            <div class="metric-icon-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            </div>
-          </div>
-          <strong id="totalUsers">0</strong>
-          <span class="metric-trend">Attributed wallets</span>
-        </article>
-        <article class="metric-card spotlight-card">
-          <div class="metric-card-header">
-            <span>Verified Builders</span>
-            <div class="metric-icon-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 11 2 2 4-4"></path></svg>
-            </div>
-          </div>
-          <strong id="verifiedCount">0</strong>
-          <span class="metric-trend">Verified integrations</span>
-        </article>
-        <article class="metric-card spotlight-card">
-          <div class="metric-card-header">
-            <span>Best 24h Volume</span>
-            <div class="metric-icon-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            </div>
-          </div>
-          <strong id="bestDay">$0</strong>
-          <span class="metric-trend">Peak daily volume</span>
-        </article>
       </section>
 
       <section class="workspace">
@@ -186,11 +136,11 @@
               <div class="query-inputs">
                 <label>
                   <span>After</span>
-                  <input id="afterInput" type="datetime-local" />
+                  <input id="afterInput" type="date" />
                 </label>
                 <label>
                   <span>Before</span>
-                  <input id="beforeInput" type="datetime-local" />
+                  <input id="beforeInput" type="date" />
                 </label>
               </div>
               <div class="query-buttons">
