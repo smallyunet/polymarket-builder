@@ -41,7 +41,7 @@
       </section>
 
       <section class="summary-grid" aria-label="Summary metrics">
-        <article class="metric-card">
+        <article class="metric-card spotlight-card">
           <div class="metric-card-header">
             <span>Total Volume</span>
             <div class="metric-icon-wrap">
@@ -51,7 +51,7 @@
           <strong id="totalVolume">$0</strong>
           <span class="metric-trend">Cumulative attribution</span>
         </article>
-        <article class="metric-card">
+        <article class="metric-card spotlight-card">
           <div class="metric-card-header">
             <span>Active Users</span>
             <div class="metric-icon-wrap">
@@ -61,7 +61,7 @@
           <strong id="totalUsers">0</strong>
           <span class="metric-trend">Attributed wallets</span>
         </article>
-        <article class="metric-card">
+        <article class="metric-card spotlight-card">
           <div class="metric-card-header">
             <span>Verified Builders</span>
             <div class="metric-icon-wrap">
@@ -71,7 +71,7 @@
           <strong id="verifiedCount">0</strong>
           <span class="metric-trend">Verified integrations</span>
         </article>
-        <article class="metric-card">
+        <article class="metric-card spotlight-card">
           <div class="metric-card-header">
             <span>Best 24h Volume</span>
             <div class="metric-icon-wrap">
@@ -85,7 +85,7 @@
 
       <section class="workspace">
         <!-- Left Column: Leaderboard -->
-        <div class="leaderboard-shell">
+        <div class="leaderboard-shell spotlight-card">
           <div class="section-heading">
             <h2>Leaderboard</h2>
           </div>
@@ -119,10 +119,10 @@
             <table>
               <thead>
                 <tr>
-                  <th>Rank</th>
-                  <th>Project</th>
-                  <th style="text-align: right;">Volume</th>
-                  <th style="text-align: right;">Users</th>
+                  <th class="sortable" data-sort="rank">Rank</th>
+                  <th class="sortable" data-sort="project">Project</th>
+                  <th class="sortable" data-sort="volume" style="text-align: right;">Volume</th>
+                  <th class="sortable" data-sort="users" style="text-align: right;">Users</th>
                   <th>Builder Code</th>
                 </tr>
               </thead>
@@ -136,7 +136,7 @@
         </div>
 
         <!-- Right Column: Detail Panel -->
-        <aside class="detail-panel">
+        <aside class="detail-panel spotlight-card">
           <!-- Empty State: Global Volume Stacked Chart -->
           <div id="emptyDetail" class="empty-state">
             <div class="empty-state-intro">
@@ -179,30 +179,6 @@
               <article>
                 <span>Leaderboard Users</span>
                 <strong id="detailUsers">0</strong>
-              </article>
-              <article>
-                <span>Loaded Trades</span>
-                <strong id="tradeCount">0</strong>
-              </article>
-              <article>
-                <span>Loaded Trade USDC</span>
-                <strong id="tradeVolume">$0</strong>
-              </article>
-              <article>
-                <span>Unique Owners</span>
-                <strong id="uniqueOwners">0</strong>
-              </article>
-              <article>
-                <span>Unique Markets</span>
-                <strong id="uniqueMarkets">0</strong>
-              </article>
-              <article>
-                <span>Maker Trades</span>
-                <strong id="makerTrades">0</strong>
-              </article>
-              <article>
-                <span>Taker Trades</span>
-                <strong id="takerTrades">0</strong>
               </article>
             </div>
 

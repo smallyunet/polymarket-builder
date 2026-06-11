@@ -7,6 +7,8 @@ const state = {
   trades: [],
   nextCursor: null,
   loading: false,
+  sortColumn: null,
+  sortDirection: "asc",
 };
 
 const els = {
@@ -31,12 +33,6 @@ const els = {
   detailCode: document.querySelector("#detailCode"),
   detailVolume: document.querySelector("#detailVolume"),
   detailUsers: document.querySelector("#detailUsers"),
-  tradeCount: document.querySelector("#tradeCount"),
-  tradeVolume: document.querySelector("#tradeVolume"),
-  uniqueOwners: document.querySelector("#uniqueOwners"),
-  uniqueMarkets: document.querySelector("#uniqueMarkets"),
-  makerTrades: document.querySelector("#makerTrades"),
-  takerTrades: document.querySelector("#takerTrades"),
   rawTrades: document.querySelector("#rawTrades"),
   cursorState: document.querySelector("#cursorState"),
   volumeBars: document.querySelector("#volumeBars"),
@@ -167,9 +163,45 @@ function renderSummary() {
   els.lastUpdated.textContent = `Updated ${new Date().toLocaleString()}`;
 }
 
+function filteredAndSortedBuilders() {
+  const list = filteredBuilders();
+  if (state.sortColumn) {
+    list.sort((a, b) => {
+      let valA, valB;
+      if (state.sortColumn === "rank") {
+        valA = number(a.rank);
+        valB = number(b.rank);
+      } else if (state.sortColumn === "project") {
+        valA = (a.builder || "").toLowerCase();
+        valB = (b.builder || "").toLowerCase();
+      } else if (state.sortColumn === "volume") {
+        valA = number(a.volume);
+        valB = number(b.volume);
+      } else if (state.sortColumn === "users") {
+        valA = number(a.activeUsers);
+        valB = number(b.activeUsers);
+      }
+      
+      if (valA < valB) return state.sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return state.sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+  return list;
+}
+
 function renderBuilders() {
   els.builderRows.innerHTML = "";
-  const rows = filteredBuilders();
+  
+  // Update header classes to show sorting arrows
+  document.querySelectorAll("th.sortable").forEach((th) => {
+    th.classList.remove("asc", "desc");
+    if (th.dataset.sort === state.sortColumn) {
+      th.classList.add(state.sortDirection);
+    }
+  });
+
+  const rows = filteredAndSortedBuilders();
 
   for (const builder of rows) {
     const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
@@ -481,17 +513,6 @@ function updateAccordionHeight() {
 }
 
 function renderTrades() {
-  const owners = new Set(state.trades.map((trade) => trade.owner).filter(Boolean));
-  const markets = new Set(state.trades.map((trade) => trade.market).filter(Boolean));
-  const tradeVolume = state.trades.reduce((sum, trade) => sum + number(trade.sizeUsdc), 0);
-
-  els.tradeCount.textContent = fmtInt.format(state.trades.length);
-  els.tradeVolume.textContent = fmtCompactUsd.format(tradeVolume);
-  els.uniqueOwners.textContent = fmtInt.format(owners.size);
-  els.uniqueMarkets.textContent = fmtInt.format(markets.size);
-  els.makerTrades.textContent = fmtInt.format(state.trades.filter((trade) => trade.tradeType === "MAKER").length);
-  els.takerTrades.textContent = fmtInt.format(state.trades.filter((trade) => trade.tradeType === "TAKER").length);
-  
   els.rawTrades.textContent = JSON.stringify(state.trades, null, 2);
   els.cursorState.textContent = state.nextCursor && state.nextCursor !== "LTE=" ? `next_cursor: ${state.nextCursor}` : "End of pages";
   els.loadNextTrades.disabled = !state.nextCursor || state.nextCursor === "LTE=" || state.loading;
@@ -682,11 +703,31 @@ function downloadCsv() {
   download(`${state.selected?.builder || "builder"}-trades.csv`, [columns.join(","), ...rows].join("\n"), "text/csv");
 }
 
+// Tab sliding indicator
+function updateSegmentedIndicator() {
+  const container = document.querySelector(".segmented");
+  if (!container) return;
+  const activeBtn = container.querySelector("button.active");
+  let indicator = container.querySelector(".segmented-indicator");
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.className = "segmented-indicator";
+    container.appendChild(indicator);
+  }
+  if (activeBtn) {
+    indicator.style.left = `${activeBtn.offsetLeft}px`;
+    indicator.style.width = `${activeBtn.offsetWidth}px`;
+    indicator.style.height = `${activeBtn.offsetHeight}px`;
+    indicator.style.top = `${activeBtn.offsetTop}px`;
+  }
+}
+
 // Event Listeners Wire-up
 document.querySelectorAll("[data-period]").forEach((button) => {
   button.addEventListener("click", async () => {
     document.querySelectorAll("[data-period]").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
+    updateSegmentedIndicator();
     state.period = button.dataset.period;
     await loadBuilders({ reset: true });
   });
@@ -702,6 +743,20 @@ els.downloadJson.addEventListener("click", () => {
   download(`${state.selected?.builder || "builder"}-trades.json`, JSON.stringify(state.trades, null, 2), "application/json");
 });
 els.downloadCsv.addEventListener("click", downloadCsv);
+
+// Table sorting header click events
+document.querySelectorAll("th.sortable").forEach((th) => {
+  th.addEventListener("click", () => {
+    const col = th.dataset.sort;
+    if (state.sortColumn === col) {
+      state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
+    } else {
+      state.sortColumn = col;
+      state.sortDirection = (col === "volume" || col === "users") ? "desc" : "asc";
+    }
+    renderBuilders();
+  });
+});
 
 // Copy Builder Code Button
 if (els.copyCodeButton) {
@@ -737,8 +792,14 @@ if (els.accordionHeader) {
   });
 }
 
-// Initial Loading
-loadBuilders({ reset: true }).catch((error) => {
+// Initial Loading & Visual Setup
+updateSegmentedIndicator();
+window.addEventListener("resize", updateSegmentedIndicator);
+
+loadBuilders({ reset: true }).then(() => {
+  // Recalculate indicators after layout settles
+  setTimeout(updateSegmentedIndicator, 100);
+}).catch((error) => {
   els.builderRows.innerHTML = `<tr><td colspan="5">Failed to load data: ${error.message}</td></tr>`;
   console.error(error);
 });
