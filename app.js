@@ -83,15 +83,15 @@ if (!globalTooltip) {
   document.body.appendChild(globalTooltip);
 }
 
-function showTooltip(e, text) {
-  globalTooltip.textContent = text;
+function showTooltip(e, html) {
+  globalTooltip.innerHTML = html;
   globalTooltip.classList.remove("hidden");
   positionTooltip(e);
 }
 
 function positionTooltip(e) {
-  globalTooltip.style.left = `${e.pageX + 10}px`;
-  globalTooltip.style.top = `${e.pageY + 10}px`;
+  globalTooltip.style.left = `${e.pageX + 12}px`;
+  globalTooltip.style.top = `${e.pageY + 12}px`;
 }
 
 function hideTooltip() {
@@ -301,7 +301,7 @@ function renderGlobalVolumeChart() {
 
     const track = document.createElement("div");
     track.className = "bar-track-vertical";
-    track.style.height = `${columnPct}%`;
+    track.style.height = "0%";
 
     // Stack segments
     let otherSum = 0;
@@ -319,8 +319,14 @@ function renderGlobalVolumeChart() {
         seg.style.background = color;
         
         const builderName = codeToName[code] || shortCode(code);
-        const tooltipText = `${builderName}: ${fmtUsd.format(vol)} (${new Date(dt).toLocaleDateString()})`;
-        seg.addEventListener("mouseover", (e) => showTooltip(e, tooltipText));
+        const dateObj = new Date(dt + "T00:00:00");
+        const dateFormatted = dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+        const tooltipHtml = `
+          <div style="font-weight: 600; margin-bottom: 2px;">${builderName}</div>
+          <div style="color: var(--blue-hover); font-weight: 700; font-size: 13px;">${fmtUsd.format(vol)}</div>
+          <div style="color: var(--ink-subtle); font-size: 10px; margin-top: 2px;">${dateFormatted}</div>
+        `;
+        seg.addEventListener("mouseover", (e) => showTooltip(e, tooltipHtml));
         seg.addEventListener("mousemove", positionTooltip);
         seg.addEventListener("mouseout", hideTooltip);
         
@@ -336,8 +342,14 @@ function renderGlobalVolumeChart() {
       seg.style.height = `${(otherSum / totalVol) * 100}%`;
       seg.style.background = otherColor;
       
-      const tooltipText = `Other Builders: ${fmtUsd.format(otherSum)} (${new Date(dt).toLocaleDateString()})`;
-      seg.addEventListener("mouseover", (e) => showTooltip(e, tooltipText));
+      const dateObj = new Date(dt + "T00:00:00");
+      const dateFormatted = dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      const tooltipHtml = `
+        <div style="font-weight: 600; margin-bottom: 2px;">Other Builders</div>
+        <div style="color: var(--ink-muted); font-weight: 700; font-size: 13px;">${fmtUsd.format(otherSum)}</div>
+        <div style="color: var(--ink-subtle); font-size: 10px; margin-top: 2px;">${dateFormatted}</div>
+      `;
+      seg.addEventListener("mouseover", (e) => showTooltip(e, tooltipHtml));
       seg.addEventListener("mousemove", positionTooltip);
       seg.addEventListener("mouseout", hideTooltip);
       
@@ -354,6 +366,11 @@ function renderGlobalVolumeChart() {
     column.append(label);
 
     els.globalVolumeChart.append(column);
+
+    // Staggered slide-up entry animation
+    setTimeout(() => {
+      track.style.height = `${columnPct}%`;
+    }, 50 + dateIdx * 20);
   });
 
   // Render Legend items
@@ -410,7 +427,7 @@ function renderVolumeBars() {
   // Render Y Axis
   renderYAxis(els.singleYAxis, max);
 
-  for (const row of rows) {
+  rows.forEach((row, idx) => {
     const vol = number(row.volume);
     const pct = (vol / max) * 100;
 
@@ -419,16 +436,25 @@ function renderVolumeBars() {
 
     const fill = document.createElement("div");
     fill.className = "single-bar-fill";
-    fill.style.height = `${Math.max(3, pct)}%`;
+    fill.style.height = "0%"; // Initial height for transition
 
     const dateObj = new Date(row.dt.split("T")[0] + "T00:00:00");
     const dateFormatted = dateObj.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     });
+    const dateFormattedFull = dateObj.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
 
-    const tooltipText = `${state.selected.builder || 'Builder'}: ${fmtUsd.format(vol)} (${dateFormatted})`;
-    fill.addEventListener("mouseover", (e) => showTooltip(e, tooltipText));
+    const tooltipHtml = `
+      <div style="font-weight: 600; margin-bottom: 2px;">${state.selected.builder || 'Builder'}</div>
+      <div style="color: var(--blue-hover); font-weight: 700; font-size: 13px;">${fmtUsd.format(vol)}</div>
+      <div style="color: var(--ink-subtle); font-size: 10px; margin-top: 2px;">${dateFormattedFull}</div>
+    `;
+    fill.addEventListener("mouseover", (e) => showTooltip(e, tooltipHtml));
     fill.addEventListener("mousemove", positionTooltip);
     fill.addEventListener("mouseout", hideTooltip);
 
@@ -440,7 +466,12 @@ function renderVolumeBars() {
     column.append(label);
 
     els.volumeBars.append(column);
-  }
+
+    // Staggered slide-up entry animation
+    setTimeout(() => {
+      fill.style.height = `${Math.max(3, pct)}%`;
+    }, 50 + idx * 25);
+  });
 }
 
 function updateAccordionHeight() {
