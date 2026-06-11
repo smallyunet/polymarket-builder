@@ -10,6 +10,32 @@ npm start
 
 Then open <http://localhost:4173>
 
+## Export Builder Data
+
+```sh
+npm run export:builders
+```
+
+The export writes a timestamped directory under `data/builder-export/` with:
+
+- `REPORT.md` for a human-readable overview.
+- `builders.csv` for one-row-per-builder analysis.
+- `builders.json`, `volumes.json`, and `trades.json` for structured AI analysis.
+- `raw/` endpoint payloads for auditability.
+
+By default the export fetches every builder found in the leaderboard and the
+latest builder-trades page for each builder. Use environment variables to tune
+depth:
+
+```sh
+TRADE_MAX_PAGES=3 npm run export:builders
+TRADE_MAX_PAGES=0 TRADE_CONCURRENCY=2 npm run export:builders
+TRADE_BUILDER_LIMIT=50 npm run export:builders
+```
+
+`TRADE_MAX_PAGES=0` follows trade cursors until the endpoint stops returning a
+cursor, which can produce a very large local export.
+
 ## Deploy on GitHub Pages
 
 This app can be deployed as a static GitHub Pages site. Push `index.html`,
