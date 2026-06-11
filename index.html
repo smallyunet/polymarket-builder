@@ -25,28 +25,12 @@
           <h1>Builder leaderboard, activity, and attributed trades.</h1>
         </div>
         <div class="hero-panel" aria-live="polite">
-          <span class="panel-label">Loaded Builders</span>
-          <strong id="loadedBuilders">0</strong>
-          <span id="lastUpdated">Waiting for data</span>
+          <div class="hero-panel-content">
+            <span class="panel-label">Loaded Builders</span>
+            <strong id="loadedBuilders">0</strong>
+            <span id="lastUpdated">Waiting for data</span>
+          </div>
         </div>
-      </section>
-
-      <section class="controls" aria-label="Query controls">
-        <div class="segmented" role="tablist" aria-label="Time period">
-          <button class="active" data-period="DAY" type="button">Day</button>
-          <button data-period="WEEK" type="button">Week</button>
-          <button data-period="MONTH" type="button">Month</button>
-          <button data-period="ALL" type="button">All</button>
-        </div>
-        <label class="search-box">
-          <span>Search</span>
-          <input id="searchInput" type="search" placeholder="Builder name or code" />
-        </label>
-        <label class="toggle">
-          <input id="verifiedOnly" type="checkbox" />
-          <span>Verified only</span>
-        </label>
-        <button id="refreshButton" class="primary" type="button">Refresh</button>
       </section>
 
       <section class="summary-grid" aria-label="Summary metrics">
@@ -69,43 +53,90 @@
       </section>
 
       <section class="workspace">
+        <!-- Left Column: Leaderboard -->
         <div class="leaderboard-shell">
           <div class="section-heading">
-            <div>
-              <p class="eyebrow">LEADERBOARD</p>
-              <h2>Projects</h2>
-            </div>
-            <button id="loadMoreBuilders" type="button">Load more</button>
+            <h2>Leaderboard</h2>
           </div>
+          
+          <div class="controls" aria-label="Query controls">
+            <div class="segmented" role="tablist" aria-label="Time period">
+              <button class="active" data-period="DAY" type="button">Day</button>
+              <button data-period="WEEK" type="button">Week</button>
+              <button data-period="MONTH" type="button">Month</button>
+              <button data-period="ALL" type="button">All</button>
+            </div>
+            
+            <label class="search-box">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="searchInput" type="search" placeholder="Search builder name or code..." />
+            </label>
+            
+            <label class="toggle">
+              <input id="verifiedOnly" type="checkbox" />
+              <div class="toggle-switch"></div>
+              <span>Verified only</span>
+            </label>
+            
+            <button id="refreshButton" class="btn btn-primary" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Refresh
+            </button>
+          </div>
+
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Rank</th>
                   <th>Project</th>
-                  <th>Volume</th>
-                  <th>Users</th>
+                  <th style="text-align: right;">Volume</th>
+                  <th style="text-align: right;">Users</th>
                   <th>Builder Code</th>
                 </tr>
               </thead>
               <tbody id="builderRows"></tbody>
             </table>
+            
+            <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: center;">
+              <button id="loadMoreBuilders" class="btn btn-outline" type="button" style="width: 100%;">Load more projects</button>
+            </div>
           </div>
         </div>
 
+        <!-- Right Column: Detail Panel -->
         <aside class="detail-panel">
+          <!-- Empty State: Global Volume Stacked Chart -->
           <div id="emptyDetail" class="empty-state">
-            <span>Select a project</span>
-            <p>Click any builder row to fetch attributed trades and inspect all fields returned by the API.</p>
+            <div class="empty-state-intro">
+              <h3>Market Volume History</h3>
+              <p>Click any builder project in the leaderboard to inspect individual trades, custom volume charts, and detailed metrics.</p>
+            </div>
+            
+            <div class="chart-container" style="width: 100%;">
+              <div class="chart-header">
+                <span class="chart-title">Global Builder Volume (Past 18 Days)</span>
+              </div>
+              <div style="position: relative; width: 100%; margin-top: 10px;">
+                <div id="globalYAxis" class="chart-y-axis"></div>
+                <div id="globalVolumeChart" class="bar-chart-wrap"></div>
+              </div>
+              <div id="globalChartLegend" class="chart-legend"></div>
+            </div>
           </div>
 
+          <!-- Selection State: Detailed builder view -->
           <div id="detailContent" class="hidden">
             <div class="detail-head">
               <div class="avatar large" id="detailAvatar"></div>
-              <div>
-                <p class="eyebrow">SELECTED BUILDER</p>
+              <div class="detail-title-area">
                 <h2 id="detailName">Builder</h2>
-                <p id="detailCode" class="mono"></p>
+                <div class="detail-code-row">
+                  <span id="detailCode" class="code-cell"></span>
+                  <button id="copyCodeButton" class="copy-btn" title="Copy Builder Code">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -126,33 +157,12 @@
                 <span>Loaded Trade USDC</span>
                 <strong id="tradeVolume">$0</strong>
               </article>
-            </div>
-
-            <div class="query-strip">
-              <label>
-                <span>After</span>
-                <input id="afterInput" type="datetime-local" />
-              </label>
-              <label>
-                <span>Before</span>
-                <input id="beforeInput" type="datetime-local" />
-              </label>
-              <button id="reloadTrades" type="button">Reload trades</button>
-            </div>
-
-            <div class="trade-actions">
-              <button id="loadNextTrades" type="button">Load next page</button>
-              <button id="downloadJson" type="button">Download JSON</button>
-              <button id="downloadCsv" type="button">Download CSV</button>
-            </div>
-
-            <div class="detail-stats compact">
               <article>
                 <span>Unique Owners</span>
                 <strong id="uniqueOwners">0</strong>
               </article>
               <article>
-                <span>Markets</span>
+                <span>Unique Markets</span>
                 <strong id="uniqueMarkets">0</strong>
               </article>
               <article>
@@ -165,46 +175,108 @@
               </article>
             </div>
 
-            <div class="timeline">
-              <div class="section-heading slim">
-                <div>
-                  <p class="eyebrow">VOLUME SERIES</p>
-                  <h3>Daily records from /builders/volume</h3>
-                </div>
+            <div class="query-strip">
+              <div class="query-inputs">
+                <label>
+                  <span>After</span>
+                  <input id="afterInput" type="datetime-local" />
+                </label>
+                <label>
+                  <span>Before</span>
+                  <input id="beforeInput" type="datetime-local" />
+                </label>
               </div>
-              <div id="volumeBars" class="bars"></div>
+              <div class="query-buttons">
+                <button id="reloadTrades" class="btn btn-primary btn-sm" type="button">Reload Trades</button>
+              </div>
             </div>
 
-            <div class="raw-data">
-              <div class="section-heading slim">
-                <div>
-                  <p class="eyebrow">RAW API DATA</p>
-                  <h3>Builder trades</h3>
-                </div>
-                <span id="cursorState" class="muted">No cursor</span>
+            <div class="query-strip" style="border-top: 0; padding-top: 0; padding-bottom: 20px;">
+              <div class="query-buttons">
+                <button id="loadNextTrades" class="btn btn-outline btn-sm" type="button">Load Next Page</button>
+                <button id="downloadJson" class="btn btn-outline btn-sm" type="button">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  JSON
+                </button>
+                <button id="downloadCsv" class="btn btn-outline btn-sm" type="button">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  CSV
+                </button>
               </div>
-              <pre id="rawTrades">[]</pre>
+            </div>
+
+            <div class="detail-section-title">Volume Series Timeline</div>
+            <div class="chart-container" style="padding-top: 0; padding-bottom: 24px;">
+              <div style="position: relative; width: 100%;">
+                <div id="singleYAxis" class="chart-y-axis"></div>
+                <div id="volumeBars" class="single-bar-chart"></div>
+              </div>
+            </div>
+
+            <div class="detail-section-title">
+              <span>Attributed Trades</span>
+              <span id="cursorState" class="muted" style="text-transform: none; font-weight: normal;">No cursor</span>
+            </div>
+
+            <div class="trades-table-wrap">
+              <table class="trades-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Side</th>
+                    <th style="text-align: right;">Size (USDC)</th>
+                    <th style="text-align: right;">Price</th>
+                    <th>Outcome</th>
+                    <th>Market</th>
+                  </tr>
+                </thead>
+                <tbody id="tradeRows"></tbody>
+              </table>
+            </div>
+
+            <!-- Collapsible raw JSON data -->
+            <div class="raw-data-accordion">
+              <div class="accordion-header" id="accordionHeader">
+                <span>Raw API Data (Trades JSON)</span>
+                <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <div class="accordion-content" id="accordionContent">
+                <pre id="rawTrades">[]</pre>
+              </div>
             </div>
           </div>
         </aside>
       </section>
     </main>
 
+    <!-- Leaderboard table row template -->
     <template id="builderRowTemplate">
       <tr>
-        <td class="rank"></td>
+        <td class="rank-cell"></td>
         <td>
           <div class="builder-cell">
             <div class="avatar"></div>
             <div>
               <strong class="builder-name"></strong>
-              <span class="builder-status"></span>
+              <div class="builder-status"></div>
             </div>
           </div>
         </td>
-        <td class="volume"></td>
-        <td class="users"></td>
-        <td class="code mono"></td>
+        <td class="volume-cell"></td>
+        <td class="users-cell"></td>
+        <td class="code-cell"></td>
+      </tr>
+    </template>
+
+    <!-- Trade row template -->
+    <template id="tradeRowTemplate">
+      <tr>
+        <td class="trade-time" style="color: var(--ink-muted);"></td>
+        <td><span class="trade-side"></span></td>
+        <td class="trade-size" style="text-align: right; font-weight: 600;"></td>
+        <td class="trade-price" style="text-align: right; color: var(--ink-muted); font-family: 'JetBrains Mono', monospace;"></td>
+        <td class="trade-outcome" style="color: var(--ink-muted);"></td>
+        <td class="trade-market" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted);" title=""></td>
       </tr>
     </template>
 
