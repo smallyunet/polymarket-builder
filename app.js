@@ -49,6 +49,7 @@ const els = {
   tradeRowTemplate: document.querySelector("#tradeRowTemplate"),
   accordionHeader: document.querySelector("#accordionHeader"),
   accordionContent: document.querySelector("#accordionContent"),
+  backToListButton: document.querySelector("#backToListButton"),
 };
 
 const fmtUsd = new Intl.NumberFormat("en-US", {
@@ -587,6 +588,7 @@ function renderDetail() {
   if (!state.selected) {
     els.emptyDetail.classList.remove("hidden");
     els.detailContent.classList.add("hidden");
+    document.body.classList.remove("detail-selected");
     renderGlobalVolumeChart();
     return;
   }
@@ -594,6 +596,7 @@ function renderDetail() {
   const builder = state.selected;
   els.emptyDetail.classList.add("hidden");
   els.detailContent.classList.remove("hidden");
+  document.body.classList.add("detail-selected");
   setAvatar(els.detailAvatar, builder);
   els.detailName.textContent = builder.builder || "Unnamed builder";
   els.detailCode.textContent = builder.builderCode || "Legacy / empty builder code";
@@ -823,6 +826,16 @@ if (els.accordionHeader) {
     } else {
       content.style.maxHeight = content.scrollHeight + "px";
     }
+  });
+}
+
+// Back to Leaderboard button on mobile
+if (els.backToListButton) {
+  els.backToListButton.addEventListener("click", () => {
+    state.selected = null;
+    state.trades = [];
+    state.nextCursor = null;
+    render();
   });
 }
 

@@ -1223,36 +1223,273 @@ tbody tr:nth-child(3) .rank-cell {
 }
 
 @media (max-width: 768px) {
+  /* Prevent background scrolling when mobile details panel is open */
+  body.detail-selected {
+    overflow: hidden;
+  }
+
   .topbar {
     padding: 0 24px;
     height: 64px;
   }
+  
   main {
-    padding: 20px 24px 40px;
-    gap: 24px;
+    padding: 16px 16px 32px;
+    gap: 20px;
   }
+  
   .hero {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 8px;
+    padding: 4px 0;
   }
-  .controls {
-    padding: 16px 20px;
+  
+  .hero h1 {
+    font-size: 26px;
+  }
+  
+  .workspace {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    gap: 20px;
   }
-  .search-box {
-    width: 100%;
-  }
-  .detail-stats {
-    grid-template-columns: 1fr;
-    padding: 16px 20px;
-  }
+
+  /* Table styling */
   .table-wrap {
     overflow-x: auto;
   }
+  
   .leaderboard-shell th {
-    position: static;
+    position: sticky;
+    top: 64px; /* Sticks right below the sticky 64px topbar */
+    z-index: 10;
+    background: var(--panel-solid);
+    padding: 12px 14px;
+  }
+  
+  th, td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  /* Hide builder code column on mobile to fit table nicely */
+  .code-header,
+  td.code-cell {
+    display: none !important;
+  }
+
+  /* Controls Section */
+  .controls {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .segmented {
+    width: 100%;
+  }
+  
+  .segmented button {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+
+  /* Inline Detail Panel when NO project is selected (shows global stats) */
+  .detail-panel {
+    order: -1; /* Place global chart at the top of the workspace */
+    position: relative;
+    top: auto;
+    max-height: none;
+    border-radius: 20px;
+    margin-bottom: 0;
+  }
+
+  /* Floating drawer for details when a project IS selected */
+  #detailContent {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    background: #03060f; /* Match --bg value */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    animation: slideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  @keyframes slideIn {
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Sticky back navigation bar in details drawer */
+  .mobile-back-nav {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13, 18, 30, 0.85);
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue-hover);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  
+  .btn-back:hover {
+    background: rgba(0, 98, 255, 0.08);
+  }
+
+  /* Padding adjustments inside details drawer */
+  .detail-head {
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .detail-head h2 {
+    font-size: 20px;
+  }
+  
+  .detail-stats {
+    grid-template-columns: 1fr 1fr;
+    padding: 16px 20px;
+    gap: 10px;
+  }
+  
+  .detail-stats article {
+    padding: 12px 14px;
+  }
+  
+  .query-strip {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  
+  .query-inputs {
+    grid-template-columns: 1fr; /* Stack dates for native datepicker sizing */
+    gap: 8px;
+  }
+  
+  .query-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .query-buttons button {
+    flex: 1 1 45%;
+    font-size: 12px;
+    height: 36px;
+  }
+
+  .detail-section-title {
+    padding: 20px 20px 8px;
+  }
+
+  /* Charts and Tables formatting inside drawer */
+  .chart-container {
+    padding: 16px 20px 24px;
+  }
+  
+  .bar-chart-wrap {
+    padding: 0 4px 32px;
+    gap: 6px;
+  }
+  
+  .single-bar-chart {
+    padding: 0 4px 24px;
+    gap: 4px;
+  }
+  
+  .trades-table-wrap {
+    margin: 0 20px 20px;
+    max-height: 380px;
+  }
+  
+  .trades-table th, .trades-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Extra small devices (phones in portrait) styling */
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 16px;
+  }
+  
+  .brand span:not(.brand-mark) {
+    display: none; /* Hide logo text "Polymarket Builders" and show only "P" mark to save top space */
+  }
+  
+  nav {
+    gap: 16px;
+  }
+  
+  th, td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .rank-cell {
+    width: 45px;
+    font-size: 13px;
+  }
+  
+  .builder-cell {
+    gap: 8px;
+  }
+  
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+  
+  .avatar.large {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+  
+  .detail-stats {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  
+  .trades-table-wrap {
+    margin: 0 16px 16px;
+  }
+
+  .trades-table th, .trades-table td {
+    padding: 8px 10px;
   }
 }
 

@@ -73,7 +73,7 @@
                   <th class="sortable" data-sort="project">Project</th>
                   <th class="sortable" data-sort="volume" style="text-align: right;">Volume</th>
                   <th class="sortable" data-sort="users" style="text-align: right;">Users</th>
-                  <th>Builder Code</th>
+                  <th class="code-header">Builder Code</th>
                 </tr>
               </thead>
               <tbody id="builderRows"></tbody>
@@ -108,6 +108,12 @@
 
           <!-- Selection State: Detailed builder view -->
           <div id="detailContent" class="hidden">
+            <div class="mobile-back-nav">
+              <button id="backToListButton" class="btn-back" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Back to Leaderboard</span>
+              </button>
+            </div>
             <div class="detail-head">
               <div class="avatar large" id="detailAvatar"></div>
               <div class="detail-title-area">
