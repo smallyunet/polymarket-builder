@@ -1044,3 +1044,7 @@ tbody tr:nth-child(3) .rank-cell { color: #b45309; } /* Bronze */
     grid-template-columns: 1fr;
   }
 }
+
+.hidden {
+  display: none !important;
+}

@@ -8,7 +8,7 @@ Small local web app for exploring Polymarket builder data.
 npm start
 ```
 
-Then open <http://localhost:4173>.
+Then open <http://localhost:4173>
 
 ## Data Sources
 
