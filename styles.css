@@ -680,8 +680,10 @@ tbody tr:nth-child(3) .rank-cell {
 
 /* Detail Sidebar */
 .detail-panel {
-  max-height: none;
-  overflow-y: visible;
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
 }
 
 .empty-state {
@@ -874,9 +876,8 @@ tbody tr:nth-child(3) .rank-cell {
   margin: 0 28px 24px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow-x: auto;
-  overflow-y: visible;
-  max-height: none;
+  overflow: auto;
+  max-height: 450px; /* Restored height constraint to prevent excessive page growth */
   background: rgba(0,0,0,0.15);
 }
 
