@@ -491,8 +491,7 @@ main {
 
 /* Leaderboard Table styling */
 .table-wrap {
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: visible;
   max-height: none;
 }
 
@@ -1245,6 +1244,12 @@ tbody tr:nth-child(3) .rank-cell {
   .detail-stats {
     grid-template-columns: 1fr;
     padding: 16px 20px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+  }
+  th {
+    position: static;
   }
 }
 
