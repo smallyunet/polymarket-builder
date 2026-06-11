@@ -1,5 +1,5 @@
 const state = {
-  period: "DAY",
+  period: "MONTH",
   builders: [],
   volumes: [],
   nextOffset: 0,
@@ -7,6 +7,8 @@ const state = {
   trades: [],
   nextCursor: null,
   loading: false,
+  isLoadingBuilders: false,
+  hasMoreBuilders: true,
   sortColumn: null,
   sortDirection: "asc",
 };
@@ -130,11 +132,32 @@ function setAvatar(el, builder) {
   }
 }
 
+function isLocalProxyAvailable() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function apiUrl(path) {
+  const url = new URL(path, window.location.origin);
+  if (isLocalProxyAvailable()) return `${url.pathname}${url.search}`;
+
+  if (url.pathname === "/api/builders/leaderboard") {
+    return `https://data-api.polymarket.com/v1/builders/leaderboard${url.search}`;
+  }
+  if (url.pathname === "/api/builders/volume") {
+    return `https://data-api.polymarket.com/v1/builders/volume${url.search}`;
+  }
+  if (url.pathname === "/api/builder/trades") {
+    return `https://clob.polymarket.com/builder/trades${url.search}`;
+  }
+  return path;
+}
+
 async function api(path) {
-  const response = await fetch(path);
-  const payload = await response.json();
+  const response = await fetch(apiUrl(path), { headers: { accept: "application/json" } });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new Error(payload.error || `Request failed: ${response.status}`);
+    throw new Error(payload?.error || `Request failed: ${response.status}`);
   }
   return payload;
 }
@@ -594,27 +617,44 @@ function render() {
   renderDetail();
 }
 
+function updateBuilderLoadStatus() {
+  if (state.isLoadingBuilders) {
+    els.loadMoreBuilders.textContent = "Loading more projects...";
+  } else if (state.hasMoreBuilders) {
+    els.loadMoreBuilders.textContent = "Scroll to load more projects";
+  } else {
+    els.loadMoreBuilders.textContent = "All projects loaded";
+  }
+}
+
 async function loadBuilders({ reset = false } = {}) {
+  if (state.isLoadingBuilders) return;
+  if (!reset && !state.hasMoreBuilders) return;
+
   if (reset) {
     state.builders = [];
     state.nextOffset = 0;
     state.selected = null;
     state.trades = [];
     state.nextCursor = null;
+    state.hasMoreBuilders = true;
   }
 
+  state.isLoadingBuilders = true;
   els.refreshButton.disabled = true;
-  els.loadMoreBuilders.disabled = true;
+  updateBuilderLoadStatus();
   try {
     const page = await api(
       `/api/builders/leaderboard?timePeriod=${state.period}&limit=50&offset=${state.nextOffset}`,
     );
     state.builders = [...state.builders, ...page];
     state.nextOffset += page.length;
-    els.loadMoreBuilders.disabled = page.length < 50;
+    state.hasMoreBuilders = page.length === 50;
     await loadVolumes();
   } finally {
+    state.isLoadingBuilders = false;
     els.refreshButton.disabled = false;
+    updateBuilderLoadStatus();
   }
   render();
 }
@@ -736,7 +776,6 @@ document.querySelectorAll("[data-period]").forEach((button) => {
 els.searchInput.addEventListener("input", renderBuilders);
 els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", () => loadBuilders({ reset: true }));
-els.loadMoreBuilders.addEventListener("click", () => loadBuilders({ reset: false }));
 els.reloadTrades.addEventListener("click", () => loadTrades({ append: false }));
 els.loadNextTrades.addEventListener("click", () => loadTrades({ append: true }));
 els.downloadJson.addEventListener("click", () => {
@@ -795,6 +834,18 @@ if (els.accordionHeader) {
 // Initial Loading & Visual Setup
 updateSegmentedIndicator();
 window.addEventListener("resize", updateSegmentedIndicator);
+
+const builderTableWrap = els.loadMoreBuilders.closest(".table-wrap");
+const builderLoadObserver = new IntersectionObserver((entries) => {
+  if (entries.some((entry) => entry.isIntersecting)) {
+    loadBuilders({ reset: false });
+  }
+}, {
+  root: builderTableWrap,
+  rootMargin: "240px 0px",
+});
+builderLoadObserver.observe(els.loadMoreBuilders);
+updateBuilderLoadStatus();
 
 loadBuilders({ reset: true }).then(() => {
   // Recalculate indicators after layout settles

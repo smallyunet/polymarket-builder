@@ -10,6 +10,16 @@ npm start
 
 Then open <http://localhost:4173>
 
+## Deploy on GitHub Pages
+
+This app can be deployed as a static GitHub Pages site. Push `index.html`,
+`styles.css`, `app.js`, and `CNAME`, then configure Pages to serve the branch
+root.
+
+GitHub Pages does not run `server.mjs`. In local development, `localhost` uses
+the Node proxy routes under `/api/*`. On GitHub Pages or a custom domain, the
+browser calls Polymarket public APIs directly.
+
 ## Data Sources
 
 - `GET https://data-api.polymarket.com/v1/builders/leaderboard`

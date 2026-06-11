@@ -614,6 +614,15 @@ main {
   max-height: 720px;
 }
 
+.load-more-status {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
