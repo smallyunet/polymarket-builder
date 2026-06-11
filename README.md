@@ -36,6 +36,19 @@ TRADE_BUILDER_LIMIT=50 npm run export:builders
 `TRADE_MAX_PAGES=0` follows trade cursors until the endpoint stops returning a
 cursor, which can produce a very large local export.
 
+To generate a single text summary from the latest export for AI analysis:
+
+```sh
+node scripts/summarize-builder-export.mjs
+```
+
+The summary is written under `data/reports/`. You can also pass an explicit
+export directory and output file:
+
+```sh
+node scripts/summarize-builder-export.mjs data/builder-export/<export-id> data/reports/<export-id>-summary.txt
+```
+
 ## Deploy on GitHub Pages
 
 This app can be deployed as a static GitHub Pages site. Push `index.html`,
