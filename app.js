@@ -830,13 +830,12 @@ if (els.accordionHeader) {
 updateSegmentedIndicator();
 window.addEventListener("resize", updateSegmentedIndicator);
 
-const builderTableWrap = els.loadMoreBuilders.closest(".table-wrap");
 const builderLoadObserver = new IntersectionObserver((entries) => {
   if (entries.some((entry) => entry.isIntersecting)) {
     loadBuilders({ reset: false });
   }
 }, {
-  root: builderTableWrap,
+  root: null, // Use the browser viewport since we removed local scrollbars
   rootMargin: "240px 0px",
 });
 builderLoadObserver.observe(els.loadMoreBuilders);

@@ -250,7 +250,18 @@ main {
   background: rgba(18, 24, 40, 0.8) !important;
 }
 
-.leaderboard-shell, .detail-panel {
+.leaderboard-shell {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  /* overflow: visible allowed for sticky positioning of child headers */
+  overflow: visible;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.3s;
+}
+
+.detail-panel {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -480,8 +491,9 @@ main {
 
 /* Leaderboard Table styling */
 .table-wrap {
-  overflow: auto;
-  max-height: 720px;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none;
 }
 
 .load-more-status {
@@ -508,7 +520,7 @@ th, td {
 
 th {
   position: sticky;
-  top: 0;
+  top: 72px; /* Aligns just below the 72px topbar */
   background: var(--panel-solid);
   z-index: 10;
   font-weight: 600;
