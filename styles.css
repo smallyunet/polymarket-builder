@@ -1257,7 +1257,8 @@ tbody tr:nth-child(3) .rank-cell {
 
   /* Table styling */
   .table-wrap {
-    overflow-x: auto;
+    /* Set to visible on mobile to prevent iOS Safari sticky table header alignment/overlap issues */
+    overflow: visible;
   }
   
   .leaderboard-shell th {
