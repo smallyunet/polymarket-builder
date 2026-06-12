@@ -200,34 +200,6 @@ main {
   gap: 32px;
 }
 
-/* Hero section */
-.hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  gap: 32px;
-}
-
-.hero h1 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  background: linear-gradient(to right, #ffffff, #9ca3af);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.eyebrow {
-  font-size: 11px;
-  text-transform: uppercase;
-  color: var(--blue-hover);
-  letter-spacing: 0.15em;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
 
 /* Workspace layout */
 .workspace {
@@ -1238,16 +1210,6 @@ tbody tr:nth-child(3) .rank-cell {
     gap: 20px;
   }
   
-  .hero {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 4px 0;
-  }
-  
-  .hero h1 {
-    font-size: 26px;
-  }
   
   .workspace {
     display: flex;
@@ -1272,6 +1234,22 @@ tbody tr:nth-child(3) .rank-cell {
   th, td {
     padding: 12px 14px;
     font-size: 13px;
+  }
+  
+  th.sortable {
+    padding-right: 18px !important;
+  }
+  
+  th.sortable::after {
+    right: 4px;
+  }
+  
+  .builder-name {
+    display: block;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   
   /* Hide builder code column on mobile to fit table nicely */
@@ -1452,14 +1430,31 @@ tbody tr:nth-child(3) .rank-cell {
     gap: 16px;
   }
   
+  main {
+    padding: 12px 12px 24px;
+    gap: 16px;
+  }
+  
   th, td {
-    padding: 10px 8px;
+    padding: 8px 6px;
     font-size: 12px;
   }
   
+  th.sortable {
+    padding-right: 12px !important;
+  }
+  
+  th.sortable::after {
+    right: 2px;
+  }
+  
   .rank-cell {
-    width: 45px;
-    font-size: 13px;
+    width: 36px;
+    font-size: 12px;
+  }
+  
+  .builder-name {
+    max-width: 95px;
   }
   
   .builder-cell {
