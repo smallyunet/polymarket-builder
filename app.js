@@ -172,20 +172,27 @@ async function api(path) {
   return payload;
 }
 
-function filteredBuilders() {
-  const query = els.searchInput.value.trim().toLowerCase();
+function searchQuery() {
+  return els.searchInput.value.trim().toLowerCase();
+}
+
+function builderMatchesSearch(builder, query = searchQuery()) {
+  if (!query) return false;
+  return (
+    builder.builder?.toLowerCase().includes(query) ||
+    builder.builderCode?.toLowerCase().includes(query)
+  );
+}
+
+function visibleBuilders() {
   return state.builders.filter((builder) => {
     if (els.verifiedOnly.checked && !builder.verified) return false;
-    if (!query) return true;
-    return (
-      builder.builder?.toLowerCase().includes(query) ||
-      builder.builderCode?.toLowerCase().includes(query)
-    );
+    return true;
   });
 }
 
-function filteredAndSortedBuilders() {
-  const list = filteredBuilders();
+function visibleAndSortedBuilders() {
+  const list = visibleBuilders();
   if (state.sortColumn) {
     list.sort((a, b) => {
       let valA, valB;
@@ -211,6 +218,18 @@ function filteredAndSortedBuilders() {
   return list;
 }
 
+function firstSearchMatch() {
+  const query = searchQuery();
+  if (!query) return null;
+  return visibleAndSortedBuilders().find((builder) => builderMatchesSearch(builder, query)) || null;
+}
+
+function scrollBuilderRowIntoView(builderCode) {
+  if (!builderCode) return;
+  const row = els.builderRows.querySelector(`tr[data-code="${CSS.escape(builderCode)}"]`);
+  row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
 function renderBuilders() {
   els.builderRows.innerHTML = "";
   
@@ -222,12 +241,14 @@ function renderBuilders() {
     }
   });
 
-  const rows = filteredAndSortedBuilders();
+  const rows = visibleAndSortedBuilders();
+  const query = searchQuery();
 
   for (const builder of rows) {
     const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
     row.dataset.code = builder.builderCode;
     if (state.selected?.builderCode === builder.builderCode) row.classList.add("active");
+    if (builderMatchesSearch(builder, query)) row.classList.add("search-match");
     row.querySelector(".rank-cell").textContent = `#${builder.rank}`;
     row.querySelector(".builder-name").textContent = builder.builder || "Unnamed builder";
     
@@ -724,6 +745,23 @@ async function selectBuilder(builder) {
   render();
 }
 
+async function handleSearchInput() {
+  const match = firstSearchMatch();
+  if (!match) {
+    renderBuilders();
+    return;
+  }
+
+  if (state.selected?.builderCode === match.builderCode) {
+    renderBuilders();
+    scrollBuilderRowIntoView(match.builderCode);
+    return;
+  }
+
+  await selectBuilder(match);
+  scrollBuilderRowIntoView(match.builderCode);
+}
+
 function download(filename, content, type) {
   const blob = new Blob([content], { type });
   const href = URL.createObjectURL(blob);
@@ -792,7 +830,7 @@ document.querySelectorAll("[data-period]").forEach((button) => {
   });
 });
 
-els.searchInput.addEventListener("input", renderBuilders);
+els.searchInput.addEventListener("input", handleSearchInput);
 els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", () => loadBuilders({ reset: true }));
 els.loadNextTrades.addEventListener("click", () => loadTrades({ append: true }));

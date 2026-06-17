@@ -592,6 +592,16 @@ tbody tr.active {
   border-left-color: var(--blue);
 }
 
+tbody tr.search-match {
+  background: rgba(34, 211, 238, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.22);
+}
+
+tbody tr.search-match.active {
+  background: rgba(34, 211, 238, 0.14);
+  border-left-color: var(--blue-hover);
+}
+
 .rank-cell {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
