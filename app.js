@@ -1,7 +1,9 @@
 const state = {
   period: "MONTH",
+  detailRange: "30d",
   builders: [],
   volumes: [],
+  detailVolumes: [],
   nextOffset: 0,
   selected: null,
   trades: [],
@@ -29,12 +31,10 @@ const els = {
   detailCode: document.querySelector("#detailCode"),
   detailVolume: document.querySelector("#detailVolume"),
   detailUsers: document.querySelector("#detailUsers"),
+  detailRangeLabel: document.querySelector("#detailRangeLabel"),
   rawTrades: document.querySelector("#rawTrades"),
   cursorState: document.querySelector("#cursorState"),
   volumeBars: document.querySelector("#volumeBars"),
-  afterInput: document.querySelector("#afterInput"),
-  beforeInput: document.querySelector("#beforeInput"),
-  reloadTrades: document.querySelector("#reloadTrades"),
   loadNextTrades: document.querySelector("#loadNextTrades"),
   downloadJson: document.querySelector("#downloadJson"),
   downloadCsv: document.querySelector("#downloadCsv"),
@@ -66,6 +66,12 @@ const fmtCompactUsd = new Intl.NumberFormat("en-US", {
 });
 
 const fmtInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+const detailRanges = {
+  "7d": { label: "Last 7 days", days: 7, volumePeriod: "WEEK" },
+  "30d": { label: "Last 30 days", days: 30, volumePeriod: "MONTH" },
+  all: { label: "All time", days: null, volumePeriod: "ALL" },
+};
 
 // Tooltip Utility
 let globalTooltip = document.querySelector("#globalTooltip");
@@ -459,13 +465,13 @@ function renderVolumeBars() {
   
   if (!state.selected) return;
 
-  const rows = state.volumes
+  const rows = state.detailVolumes
     .filter((row) => row.builderCode === state.selected.builderCode)
     .sort((a, b) => new Date(a.dt) - new Date(b.dt))
-    .slice(-18);
+    .slice(state.detailRange === "7d" ? -7 : -18);
 
   if (!rows.length) {
-    els.volumeBars.innerHTML = `<span class="muted" style="margin: auto;">No time-series rows for this period.</span>`;
+    els.volumeBars.innerHTML = `<span class="muted" style="margin: auto;">No time-series rows for this window.</span>`;
     return;
   }
 
@@ -602,6 +608,7 @@ function renderDetail() {
   els.detailCode.textContent = builder.builderCode || "Legacy / empty builder code";
   els.detailVolume.textContent = fmtCompactUsd.format(number(builder.volume));
   els.detailUsers.textContent = fmtInt.format(number(builder.activeUsers));
+  els.detailRangeLabel.textContent = detailRanges[state.detailRange].label;
   renderVolumeBars();
   renderTrades();
 }
@@ -631,6 +638,7 @@ async function loadBuilders({ reset = false } = {}) {
     state.selected = null;
     state.trades = [];
     state.nextCursor = null;
+    state.detailVolumes = [];
     state.hasMoreBuilders = true;
   }
 
@@ -662,34 +670,39 @@ async function loadVolumes() {
   }
 }
 
-function unixFromInput(input, boundary = "start") {
-  if (!input.value) return "";
-  const [year, month, day] = input.value.split("-").map(Number);
-  if (!year || !month || !day) return "";
-  const ms = boundary === "end"
-    ? new Date(year, month - 1, day, 23, 59, 59).getTime()
-    : new Date(year, month - 1, day, 0, 0, 0).getTime();
-  return Number.isFinite(ms) ? String(Math.floor(ms / 1000)) : "";
+async function loadDetailVolumes() {
+  const period = detailRanges[state.detailRange].volumePeriod;
+  try {
+    state.detailVolumes = await api(`/api/builders/volume?timePeriod=${period}`);
+  } catch (error) {
+    console.warn(error);
+    state.detailVolumes = [];
+  }
+}
+
+function unixFromDetailRange() {
+  const days = detailRanges[state.detailRange].days;
+  if (!days) return "";
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - days + 1);
+  return String(Math.floor(date.getTime() / 1000));
 }
 
 async function loadTrades({ append = false } = {}) {
   if (!state.selected?.builderCode) return;
   state.loading = true;
-  els.reloadTrades.disabled = true;
   els.loadNextTrades.disabled = true;
   try {
     const params = new URLSearchParams({ builder_code: state.selected.builderCode });
-    const after = unixFromInput(els.afterInput, "start");
-    const before = unixFromInput(els.beforeInput, "end");
+    const after = unixFromDetailRange();
     if (after) params.set("after", after);
-    if (before) params.set("before", before);
     if (append && state.nextCursor) params.set("next_cursor", state.nextCursor);
     const payload = await api(`/api/builder/trades?${params}`);
     state.trades = append ? [...state.trades, ...(payload.data || [])] : payload.data || [];
     state.nextCursor = payload.next_cursor || null;
   } finally {
     state.loading = false;
-    els.reloadTrades.disabled = false;
   }
   renderTrades();
 }
@@ -699,6 +712,7 @@ async function selectBuilder(builder) {
   state.trades = [];
   state.nextCursor = null;
   render();
+  await loadDetailVolumes();
   await loadTrades({ append: false });
   render();
 }
@@ -774,12 +788,27 @@ document.querySelectorAll("[data-period]").forEach((button) => {
 els.searchInput.addEventListener("input", renderBuilders);
 els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", () => loadBuilders({ reset: true }));
-els.reloadTrades.addEventListener("click", () => loadTrades({ append: false }));
 els.loadNextTrades.addEventListener("click", () => loadTrades({ append: true }));
 els.downloadJson.addEventListener("click", () => {
   download(`${state.selected?.builder || "builder"}-trades.json`, JSON.stringify(state.trades, null, 2), "application/json");
 });
 els.downloadCsv.addEventListener("click", downloadCsv);
+
+document.querySelectorAll("[data-detail-range]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (button.dataset.detailRange === state.detailRange) return;
+    document.querySelectorAll("[data-detail-range]").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    state.detailRange = button.dataset.detailRange;
+    state.trades = [];
+    state.nextCursor = null;
+    renderDetail();
+    if (!state.selected) return;
+    await loadDetailVolumes();
+    await loadTrades({ append: false });
+    renderDetail();
+  });
+});
 
 // Table sorting header click events
 document.querySelectorAll("th.sortable").forEach((th) => {

@@ -197,7 +197,22 @@ main {
   padding: 32px 40px 64px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 20px;
+}
+
+.top-search {
+  width: min(760px, 100%);
+  flex: none;
+  align-self: stretch;
+}
+
+.top-search.search-box input {
+  height: 50px;
+  font-size: 14px;
+  border-radius: 14px;
+  background: rgba(18, 24, 40, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
 }
 
 
@@ -352,7 +367,7 @@ main {
   transition: color 0.25s;
 }
 
-.search-box input:focus + .search-icon {
+.search-box:focus-within .search-icon {
   color: var(--blue-hover);
 }
 
@@ -775,7 +790,7 @@ tbody tr:nth-child(3) .rank-cell {
   font-weight: 700;
 }
 
-/* Date Range strip */
+/* Detail query strips */
 .query-strip {
   padding: 20px 28px;
   border-bottom: 1px solid var(--border);
@@ -783,6 +798,73 @@ tbody tr:nth-child(3) .rank-cell {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.detail-range-strip {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detail-actions-strip {
+  border-top: 0;
+  padding-top: 0;
+  padding-bottom: 20px;
+}
+
+.range-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.range-copy span {
+  font-size: 10px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.range-copy strong {
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.range-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.range-tabs button {
+  min-width: 54px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  color: var(--ink-subtle);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-tabs button:hover {
+  color: var(--ink);
+}
+
+.range-tabs button.active {
+  color: #fff;
+  background: var(--blue);
+  box-shadow: 0 4px 12px rgba(0, 98, 255, 0.3);
 }
 
 .query-inputs {
@@ -1368,6 +1450,20 @@ tbody tr:nth-child(3) .rank-cell {
   .query-strip {
     padding: 16px 20px;
     gap: 12px;
+  }
+
+  .detail-range-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .range-tabs {
+    width: 100%;
+  }
+
+  .range-tabs button {
+    flex: 1;
+    min-width: 0;
   }
   
   .query-inputs {

@@ -26,6 +26,11 @@
     </header>
 
     <main>
+      <label class="top-search search-box" aria-label="Search builders">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="searchInput" type="search" placeholder="Search builder name or code..." />
+      </label>
+
       <section class="workspace">
         <!-- Left Column: Leaderboard -->
         <div class="leaderboard-shell spotlight-card">
@@ -40,12 +45,6 @@
               <button class="active" data-period="MONTH" type="button">Month</button>
               <button data-period="ALL" type="button">All</button>
             </div>
-            
-            <label class="search-box">
-              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input id="searchInput" type="search" placeholder="Search builder name or code..." />
-            </label>
-            
             <label class="toggle">
               <input id="verifiedOnly" type="checkbox" />
               <div class="toggle-switch"></div>
@@ -131,23 +130,19 @@
               </article>
             </div>
 
-            <div class="query-strip">
-              <div class="query-inputs">
-                <label>
-                  <span>After</span>
-                  <input id="afterInput" type="date" />
-                </label>
-                <label>
-                  <span>Before</span>
-                  <input id="beforeInput" type="date" />
-                </label>
+            <div class="query-strip detail-range-strip">
+              <div class="range-copy">
+                <span>Detail Window</span>
+                <strong id="detailRangeLabel">Last 30 days</strong>
               </div>
-              <div class="query-buttons">
-                <button id="reloadTrades" class="btn btn-primary btn-sm" type="button">Reload Trades</button>
+              <div class="range-tabs" role="tablist" aria-label="Detail time window">
+                <button data-detail-range="7d" type="button">7d</button>
+                <button class="active" data-detail-range="30d" type="button">30d</button>
+                <button data-detail-range="all" type="button">All</button>
               </div>
             </div>
 
-            <div class="query-strip" style="border-top: 0; padding-top: 0; padding-bottom: 20px;">
+            <div class="query-strip detail-actions-strip">
               <div class="query-buttons">
                 <button id="loadNextTrades" class="btn btn-outline btn-sm" type="button">Load Next Page</button>
                 <button id="downloadJson" class="btn btn-outline btn-sm" type="button">
