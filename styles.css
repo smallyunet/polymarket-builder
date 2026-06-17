@@ -132,6 +132,43 @@ a:hover {
   border-bottom: 1px solid var(--border);
 }
 
+.topbar-left {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.topbar-center {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+}
+
+.topbar-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.topbar-search {
+  width: 100%;
+  max-width: 380px;
+}
+
+.topbar-search.search-box input {
+  height: 40px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.topbar-search.search-box input:focus {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -194,25 +231,10 @@ main {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 32px 40px 64px;
+  padding: 20px 40px 64px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.top-search {
-  width: min(760px, 100%);
-  flex: none;
-  align-self: stretch;
-}
-
-.top-search.search-box input {
-  height: 50px;
-  font-size: 14px;
-  border-radius: 14px;
-  background: rgba(18, 24, 40, 0.72);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  gap: 24px;
 }
 
 
@@ -1283,15 +1305,47 @@ tbody tr:nth-child(3) .rank-cell {
   }
 
   .topbar {
+    height: 112px;
     padding: 0 24px;
-    height: 64px;
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 10px;
+  }
+
+  .topbar-left {
+    flex: 1 1 auto;
+    order: 1;
+  }
+
+  .topbar-right {
+    flex: 0 0 auto;
+    order: 2;
+  }
+
+  .topbar-center {
+    flex: 1 1 100%;
+    order: 3;
+    width: 100%;
+    display: flex;
+    justify-content: stretch;
+  }
+
+  .topbar-search {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+  }
+
+  .topbar-search.search-box input {
+    height: 38px;
+    font-size: 13px;
+    border-radius: 8px;
   }
   
   main {
     padding: 16px 16px 32px;
     gap: 20px;
   }
-  
   
   .workspace {
     display: flex;
@@ -1307,7 +1361,7 @@ tbody tr:nth-child(3) .rank-cell {
   
   .leaderboard-shell th {
     position: sticky;
-    top: 64px; /* Sticks right below the sticky 64px topbar */
+    top: 112px; /* Sticks right below the sticky 112px topbar */
     z-index: 10;
     background: var(--panel-solid);
     padding: 12px 14px;

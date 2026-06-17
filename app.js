@@ -252,7 +252,7 @@ function renderBuilders() {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.colSpan = 5;
-    cell.textContent = "No builders match the current filters.";
+    cell.textContent = state.isLoadingBuilders ? "Loading projects..." : "No builders match the current filters.";
     cell.className = "muted";
     cell.style.textAlign = "center";
     row.append(cell);
@@ -645,28 +645,35 @@ async function loadBuilders({ reset = false } = {}) {
   state.isLoadingBuilders = true;
   els.refreshButton.disabled = true;
   updateBuilderLoadStatus();
+  render();
+
+  const requestedPeriod = state.period;
   try {
     const page = await api(
-      `/api/builders/leaderboard?timePeriod=${state.period}&limit=50&offset=${state.nextOffset}`,
+      `/api/builders/leaderboard?timePeriod=${requestedPeriod}&limit=50&offset=${state.nextOffset}`,
     );
+    if (requestedPeriod !== state.period) return;
     state.builders = [...state.builders, ...page];
     state.nextOffset += page.length;
     state.hasMoreBuilders = page.length === 50;
-    await loadVolumes();
   } finally {
     state.isLoadingBuilders = false;
     els.refreshButton.disabled = false;
     updateBuilderLoadStatus();
   }
   render();
+  loadVolumes(requestedPeriod).then(() => {
+    if (requestedPeriod === state.period) renderDetail();
+  });
 }
 
-async function loadVolumes() {
+async function loadVolumes(period = state.period) {
   try {
-    state.volumes = await api(`/api/builders/volume?timePeriod=${state.period}`);
+    const volumes = await api(`/api/builders/volume?timePeriod=${period}`);
+    if (period === state.period) state.volumes = volumes;
   } catch (error) {
     console.warn(error);
-    state.volumes = [];
+    if (period === state.period) state.volumes = [];
   }
 }
 

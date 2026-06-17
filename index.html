@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260617-2" />
   </head>
   <body>
     <!-- Ambient glowing backgrounds for premium visual style -->
@@ -15,22 +15,25 @@
     <div class="ambient-glow glow-2"></div>
 
     <header class="topbar">
-      <a class="brand" href="./">
-        <span class="brand-mark">P</span>
-        <span>Polymarket Builders</span>
-      </a>
-      <nav>
+      <div class="topbar-left">
+        <a class="brand" href="./">
+          <span class="brand-mark">P</span>
+          <span>Polymarket Builders</span>
+        </a>
+      </div>
+      <div class="topbar-center">
+        <label class="topbar-search search-box" aria-label="Search builders">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="searchInput" type="search" placeholder="Search builder name or code..." />
+        </label>
+      </div>
+      <nav class="topbar-right">
         <a href="https://builders.polymarket.com/" target="_blank" rel="noreferrer">Builders</a>
         <a href="https://docs.polymarket.com/api-reference/builders/get-aggregated-builder-leaderboard" target="_blank" rel="noreferrer">API Docs</a>
       </nav>
     </header>
 
     <main>
-      <label class="top-search search-box" aria-label="Search builders">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input id="searchInput" type="search" placeholder="Search builder name or code..." />
-      </label>
-
       <section class="workspace">
         <!-- Left Column: Leaderboard -->
         <div class="leaderboard-shell spotlight-card">
@@ -231,6 +234,6 @@
       </tr>
     </template>
 
-    <script src="./app.js" type="module"></script>
+    <script src="./app.js?v=20260617-2" type="module"></script>
   </body>
 </html>
