@@ -267,6 +267,39 @@
       </section>
     </main>
 
+    <aside id="viraeTracker" class="virae-tracker hidden" aria-live="polite">
+      <button id="viraeTrackerButton" class="virae-tracker-button" type="button">
+        <div class="virae-tracker-main">
+          <div id="viraeTrackerAvatar" class="avatar virae-avatar">V</div>
+          <div class="virae-tracker-identity">
+            <span class="virae-eyebrow">Tracked Builder</span>
+            <strong>Virae.ai</strong>
+            <span id="viraeTrackerStatus" class="virae-tracker-status">Locating current rank…</span>
+          </div>
+          <div class="virae-tracker-metric">
+            <span id="viraeTrackerPeriod">Month</span>
+            <strong id="viraeTrackerRank">—</strong>
+          </div>
+          <div class="virae-tracker-metric optional-metric">
+            <span>Volume</span>
+            <strong id="viraeTrackerVolume">—</strong>
+          </div>
+          <div class="virae-tracker-metric optional-metric">
+            <span>Users</span>
+            <strong id="viraeTrackerUsers">—</strong>
+          </div>
+          <span class="virae-jump-label">
+            Jump to row
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+          </span>
+        </div>
+        <div class="virae-rank-rail" aria-hidden="true">
+          <span id="viraeVisibleRange" class="virae-visible-range"></span>
+          <span id="viraeRankMarker" class="virae-rank-marker"></span>
+        </div>
+      </button>
+    </aside>
+
     <!-- Leaderboard table row template -->
     <template id="builderRowTemplate">
       <tr>

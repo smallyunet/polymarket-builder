@@ -564,6 +564,261 @@ main {
   text-align: center;
 }
 
+body.virae-tracker-active main {
+  padding-bottom: 170px;
+}
+
+.virae-tracker {
+  position: fixed;
+  bottom: 16px;
+  z-index: 90;
+  min-width: 0;
+  filter: drop-shadow(0 18px 35px rgba(0, 0, 0, 0.55));
+  transition:
+    left 180ms ease,
+    width 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+body.detail-selected .virae-tracker {
+  display: none;
+}
+
+.virae-tracker-button {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(34, 211, 238, 0.42);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(8, 20, 38, 0.97), rgba(13, 18, 30, 0.97)),
+    var(--panel-solid);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 98, 255, 0.1),
+    0 0 28px rgba(34, 211, 238, 0.1);
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.virae-tracker-button:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(0, 98, 255, 0.16),
+    0 0 34px rgba(34, 211, 238, 0.18);
+  transform: translateY(-2px);
+}
+
+.virae-tracker-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.virae-tracker-button:disabled {
+  cursor: progress;
+  opacity: 1;
+}
+
+.virae-tracker-main {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1fr) auto auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px 12px;
+}
+
+.virae-avatar {
+  width: 42px;
+  height: 42px;
+  border-color: rgba(34, 211, 238, 0.36);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
+}
+
+.virae-tracker-identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.virae-eyebrow {
+  color: #67e8f9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.virae-tracker-identity strong {
+  overflow: hidden;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.virae-tracker-status {
+  overflow: hidden;
+  color: var(--ink-subtle);
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.virae-tracker-metric {
+  min-width: 58px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.virae-tracker-metric span {
+  color: var(--ink-subtle);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.virae-tracker-metric strong {
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.virae-jump-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.virae-rank-rail {
+  position: relative;
+  height: 7px;
+  margin: 0 16px 13px;
+  border-radius: 99px;
+  background: rgba(148, 163, 184, 0.13);
+}
+
+.virae-visible-range {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  width: 0;
+  min-width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.42), rgba(34, 211, 238, 0.72));
+  transition:
+    left 180ms ease-out,
+    width 180ms ease-out;
+}
+
+.virae-rank-marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 19px;
+  border-radius: 99px;
+  background: #fbbf24;
+  box-shadow:
+    0 0 0 3px rgba(251, 191, 36, 0.14),
+    0 0 14px rgba(251, 191, 36, 0.8);
+  transform: translate(-50%, -50%);
+  transition:
+    left 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease;
+}
+
+.virae-rank-marker::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  background: #fbbf24;
+  transform: translateX(-50%);
+}
+
+.virae-rank-marker.searching {
+  opacity: 0.38;
+  animation: virae-searching 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes virae-searching {
+  from { left: 2%; }
+  to { left: 98%; }
+}
+
+.tracked-badge {
+  margin-left: 7px;
+  padding: 2px 6px;
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  border-radius: 99px;
+  background: rgba(34, 211, 238, 0.08);
+  color: #67e8f9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+tbody tr.tracked-builder-row {
+  border-left-color: #22d3ee;
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.13), rgba(0, 98, 255, 0.045) 56%, transparent);
+  box-shadow:
+    inset 0 1px rgba(34, 211, 238, 0.16),
+    inset 0 -1px rgba(34, 211, 238, 0.16);
+}
+
+tbody tr.tracked-builder-row:hover,
+tbody tr.tracked-builder-row.active {
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.19), rgba(0, 98, 255, 0.09) 60%, transparent);
+}
+
+tbody tr.tracked-builder-row .rank-cell {
+  color: #67e8f9;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.36);
+}
+
+tbody tr.tracked-builder-row.tracked-jump {
+  animation: tracked-row-jump 700ms ease-out 2;
+}
+
+@keyframes tracked-row-jump {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px rgba(34, 211, 238, 0.16),
+      inset 0 -1px rgba(34, 211, 238, 0.16);
+  }
+  45% {
+    box-shadow:
+      inset 0 0 0 2px rgba(103, 232, 249, 0.9),
+      0 0 26px rgba(34, 211, 238, 0.35);
+  }
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -1738,6 +1993,34 @@ tbody tr:nth-child(3) .rank-cell {
   /* Prevent background scrolling when mobile details panel is open */
   body.detail-selected {
     overflow: hidden;
+  }
+
+  body.virae-tracker-active main {
+    padding-bottom: 160px;
+  }
+
+  .virae-tracker {
+    bottom: 12px;
+  }
+
+  .virae-tracker-main {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px 13px 10px;
+  }
+
+  .virae-tracker .optional-metric,
+  .virae-jump-label {
+    display: none;
+  }
+
+  .virae-tracker-metric {
+    min-width: 52px;
+    padding-left: 10px;
+  }
+
+  .virae-rank-rail {
+    margin: 0 13px 12px;
   }
 
   .topbar {

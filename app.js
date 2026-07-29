@@ -18,9 +18,16 @@ const state = {
   hasMoreBuilders: true,
   sortColumn: null,
   sortDirection: "asc",
+  trackedBuilderStatus: "loading",
+  trackedBuilderPromise: null,
+  trackedJumpUntil: 0,
 };
 
+const TRACKED_BUILDER_CODE = "0xcb5f0c1b63c47ad9193a5d1a95a2055076eec604be4abb019025dd0e3554a7cc";
+
 const els = {
+  leaderboardShell: document.querySelector(".leaderboard-shell"),
+  topbar: document.querySelector(".topbar"),
   builderRows: document.querySelector("#builderRows"),
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
@@ -69,6 +76,16 @@ const els = {
   accordionHeader: document.querySelector("#accordionHeader"),
   accordionContent: document.querySelector("#accordionContent"),
   backToListButton: document.querySelector("#backToListButton"),
+  viraeTracker: document.querySelector("#viraeTracker"),
+  viraeTrackerButton: document.querySelector("#viraeTrackerButton"),
+  viraeTrackerAvatar: document.querySelector("#viraeTrackerAvatar"),
+  viraeTrackerStatus: document.querySelector("#viraeTrackerStatus"),
+  viraeTrackerPeriod: document.querySelector("#viraeTrackerPeriod"),
+  viraeTrackerRank: document.querySelector("#viraeTrackerRank"),
+  viraeTrackerVolume: document.querySelector("#viraeTrackerVolume"),
+  viraeTrackerUsers: document.querySelector("#viraeTrackerUsers"),
+  viraeVisibleRange: document.querySelector("#viraeVisibleRange"),
+  viraeRankMarker: document.querySelector("#viraeRankMarker"),
 };
 
 const fmtUsd = new Intl.NumberFormat("en-US", {
@@ -214,6 +231,17 @@ function searchQuery() {
   return els.searchInput.value.trim().toLowerCase();
 }
 
+function isTrackedBuilder(builder) {
+  return (
+    builder?.builderCode?.toLowerCase() === TRACKED_BUILDER_CODE ||
+    builder?.builder?.trim().toLowerCase() === "virae.ai"
+  );
+}
+
+function trackedBuilder() {
+  return state.builders.find(isTrackedBuilder) || null;
+}
+
 function builderMatchesSearch(builder, query = searchQuery()) {
   if (!query) return false;
   return (
@@ -287,8 +315,15 @@ function renderBuilders() {
   for (const builder of rows) {
     const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
     row.dataset.code = builder.builderCode;
+    row.dataset.rank = String(builder.rank || "");
+    row.tabIndex = 0;
     if (state.selected?.builderCode === builder.builderCode) row.classList.add("active");
     if (builderMatchesSearch(builder, query)) row.classList.add("search-match");
+    if (isTrackedBuilder(builder)) {
+      row.classList.add("tracked-builder-row");
+      if (Date.now() < state.trackedJumpUntil) row.classList.add("tracked-jump");
+      row.setAttribute("aria-label", `Tracked builder Virae.ai, rank ${builder.rank}`);
+    }
     row.querySelector(".rank-cell").textContent = `#${builder.rank}`;
     row.querySelector(".builder-name").textContent = builder.builder || "Unnamed builder";
     
@@ -300,12 +335,24 @@ function renderBuilders() {
       statusEl.textContent = "Unverified";
       statusEl.style.color = "var(--ink-subtle)";
     }
+    if (isTrackedBuilder(builder)) {
+      const trackedBadge = document.createElement("span");
+      trackedBadge.className = "tracked-badge";
+      trackedBadge.textContent = "Tracked";
+      statusEl.append(trackedBadge);
+    }
     
     row.querySelector(".volume-cell").textContent = fmtCompactUsd.format(number(builder.volume));
     row.querySelector(".users-cell").textContent = fmtInt.format(number(builder.activeUsers));
     row.querySelector(".code-cell").textContent = shortCode(builder.builderCode);
     setAvatar(row.querySelector(".avatar"), builder);
     row.addEventListener("click", () => selectBuilder(builder));
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectBuilder(builder);
+      }
+    });
     els.builderRows.append(row);
   }
 
@@ -974,9 +1021,129 @@ function renderDetail() {
   renderTrades();
 }
 
+function periodLabel(period) {
+  return {
+    DAY: "Day",
+    WEEK: "Week",
+    MONTH: "Month",
+    ALL: "All",
+  }[period] || period;
+}
+
+function maxLoadedRank() {
+  return Math.max(1, ...state.builders.map((builder) => number(builder.rank)));
+}
+
+let trackerUpdateFrame = 0;
+
+function scheduleViraeTrackerUpdate() {
+  if (trackerUpdateFrame) return;
+  trackerUpdateFrame = requestAnimationFrame(() => {
+    trackerUpdateFrame = 0;
+    updateViraeTrackerViewport();
+  });
+}
+
+function updateViraeTrackerViewport() {
+  if (els.viraeTracker.classList.contains("hidden")) return;
+
+  const shellRect = els.leaderboardShell.getBoundingClientRect();
+  const pageInset = window.innerWidth <= 900 ? 12 : Math.max(12, shellRect.left);
+  const trackerWidth = window.innerWidth <= 900
+    ? window.innerWidth - 24
+    : Math.min(shellRect.width, window.innerWidth - pageInset - 12);
+  els.viraeTracker.style.left = `${pageInset}px`;
+  els.viraeTracker.style.width = `${Math.max(280, trackerWidth)}px`;
+
+  const tracked = trackedBuilder();
+  if (!tracked) return;
+
+  const loadedMax = maxLoadedRank();
+  const trackedRank = number(tracked.rank);
+  const rankPct = loadedMax <= 1 ? 0 : ((trackedRank - 1) / (loadedMax - 1)) * 100;
+  els.viraeRankMarker.style.left = `${Math.min(100, Math.max(0, rankPct))}%`;
+
+  const trackerRect = els.viraeTracker.getBoundingClientRect();
+  const topBoundary = Math.max(0, els.topbar.getBoundingClientRect().bottom);
+  const bottomBoundary = Math.min(window.innerHeight, trackerRect.top - 8);
+  const visibleRows = [...els.builderRows.querySelectorAll("tr[data-rank]")].filter((row) => {
+    const rect = row.getBoundingClientRect();
+    return rect.bottom > topBoundary && rect.top < bottomBoundary;
+  });
+  const visibleRanks = visibleRows.map((row) => number(row.dataset.rank)).filter(Boolean);
+  if (!visibleRanks.length) {
+    els.viraeTrackerStatus.textContent = `Loaded through rank #${fmtInt.format(loadedMax)}`;
+    els.viraeVisibleRange.style.width = "0%";
+    return;
+  }
+
+  const visibleMin = Math.min(...visibleRanks);
+  const visibleMax = Math.max(...visibleRanks);
+  const rangeStart = loadedMax <= 1 ? 0 : ((visibleMin - 1) / (loadedMax - 1)) * 100;
+  const rangeEnd = loadedMax <= 1 ? 100 : ((visibleMax - 1) / (loadedMax - 1)) * 100;
+  els.viraeVisibleRange.style.left = `${Math.min(100, Math.max(0, rangeStart))}%`;
+  els.viraeVisibleRange.style.width = `${Math.max(2, Math.min(100, rangeEnd) - Math.max(0, rangeStart))}%`;
+
+  const trackedRow = els.builderRows.querySelector(`tr[data-code="${CSS.escape(tracked.builderCode)}"]`);
+  const trackedRect = trackedRow?.getBoundingClientRect();
+  const trackedInView = trackedRect && trackedRect.bottom > topBoundary && trackedRect.top < bottomBoundary;
+  const visibleLabel = `visible #${fmtInt.format(visibleMin)}–#${fmtInt.format(visibleMax)}`;
+  if (trackedInView) {
+    els.viraeTrackerStatus.textContent = `In view · ${visibleLabel}`;
+  } else if (trackedRect?.top >= bottomBoundary) {
+    const distance = Math.max(0, trackedRank - visibleMax);
+    els.viraeTrackerStatus.textContent = distance
+      ? `↓ ${fmtInt.format(distance)} ranks below ${visibleLabel}`
+      : `↓ Virae.ai row is below ${visibleLabel}`;
+  } else if (trackedRect?.bottom <= topBoundary) {
+    const distance = Math.max(0, visibleMin - trackedRank);
+    els.viraeTrackerStatus.textContent = distance
+      ? `↑ ${fmtInt.format(distance)} ranks above ${visibleLabel}`
+      : `↑ Virae.ai row is above ${visibleLabel}`;
+  } else {
+    els.viraeTrackerStatus.textContent = `Rank #${fmtInt.format(trackedRank)} · ${visibleLabel}`;
+  }
+}
+
+function renderViraeTracker() {
+  const tracked = trackedBuilder();
+  document.body.classList.add("virae-tracker-active");
+  els.viraeTracker.classList.remove("hidden");
+  els.viraeTrackerPeriod.textContent = periodLabel(state.period);
+
+  if (tracked) {
+    setAvatar(els.viraeTrackerAvatar, tracked);
+    els.viraeTrackerRank.textContent = `#${fmtInt.format(number(tracked.rank))}`;
+    els.viraeTrackerVolume.textContent = fmtCompactUsd.format(number(tracked.volume));
+    els.viraeTrackerUsers.textContent = fmtInt.format(number(tracked.activeUsers));
+    els.viraeTrackerButton.disabled = false;
+    els.viraeTrackerButton.setAttribute(
+      "aria-label",
+      `Virae.ai is rank ${tracked.rank} for ${periodLabel(state.period)}. Jump to its leaderboard row.`,
+    );
+    els.viraeRankMarker.classList.remove("searching");
+  } else {
+    els.viraeTrackerAvatar.innerHTML = "";
+    els.viraeTrackerAvatar.textContent = "V";
+    els.viraeTrackerRank.textContent = state.trackedBuilderStatus === "not-found" ? "N/R" : "…";
+    els.viraeTrackerVolume.textContent = "—";
+    els.viraeTrackerUsers.textContent = "—";
+    els.viraeTrackerButton.disabled = true;
+    els.viraeTrackerStatus.textContent = state.trackedBuilderStatus === "not-found"
+      ? `Not ranked in ${periodLabel(state.period)}`
+      : `Scanning through rank #${fmtInt.format(maxLoadedRank())}…`;
+    els.viraeTrackerButton.setAttribute("aria-label", els.viraeTrackerStatus.textContent);
+    els.viraeVisibleRange.style.width = "0%";
+    els.viraeRankMarker.classList.add("searching");
+  }
+
+  scheduleViraeTrackerUpdate();
+}
+
 function render() {
   renderBuilders();
   renderDetail();
+  renderViraeTracker();
 }
 
 function updateBuilderLoadStatus() {
@@ -1002,6 +1169,7 @@ async function loadBuilders({ reset = false } = {}) {
     state.tradeMeta = { limit: 0, count: 0 };
     state.detailVolumes = [];
     state.hasMoreBuilders = true;
+    state.trackedBuilderStatus = "loading";
   }
 
   state.isLoadingBuilders = true;
@@ -1027,6 +1195,49 @@ async function loadBuilders({ reset = false } = {}) {
   loadDailyVolumes().then(() => {
     if (requestedPeriod === state.period) renderDetail();
   });
+}
+
+async function waitForBuilderLoadingToFinish() {
+  while (state.isLoadingBuilders) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+async function ensureTrackedBuilderLoaded() {
+  if (state.trackedBuilderPromise) await state.trackedBuilderPromise;
+  if (trackedBuilder()) {
+    state.trackedBuilderStatus = "found";
+    renderViraeTracker();
+    return trackedBuilder();
+  }
+
+  const requestedPeriod = state.period;
+  state.trackedBuilderStatus = "loading";
+  renderViraeTracker();
+  const promise = (async () => {
+    while (
+      requestedPeriod === state.period &&
+      !trackedBuilder() &&
+      state.hasMoreBuilders
+    ) {
+      await waitForBuilderLoadingToFinish();
+      if (requestedPeriod !== state.period) return null;
+      const previousOffset = state.nextOffset;
+      await loadBuilders({ reset: false });
+      if (state.nextOffset === previousOffset) break;
+    }
+
+    if (requestedPeriod !== state.period) return null;
+    state.trackedBuilderStatus = trackedBuilder() ? "found" : "not-found";
+    render();
+    return trackedBuilder();
+  })();
+  state.trackedBuilderPromise = promise;
+  try {
+    return await promise;
+  } finally {
+    if (state.trackedBuilderPromise === promise) state.trackedBuilderPromise = null;
+  }
 }
 
 async function loadDailyVolumes({ force = false } = {}) {
@@ -1242,7 +1453,9 @@ document.querySelectorAll("[data-period]").forEach((button) => {
     button.classList.add("active");
     updateSegmentedIndicator();
     state.period = button.dataset.period;
+    await waitForBuilderLoadingToFinish();
     await loadBuilders({ reset: true });
+    await ensureTrackedBuilderLoaded();
   });
 });
 
@@ -1251,7 +1464,9 @@ els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", async () => {
   state.volumes = [];
   const volumesPromise = loadDailyVolumes({ force: true });
+  await waitForBuilderLoadingToFinish();
   await Promise.all([loadBuilders({ reset: true }), volumesPromise]);
+  await ensureTrackedBuilderLoaded();
   state.detailVolumes = state.volumes;
   render();
 });
@@ -1416,9 +1631,29 @@ if (els.backToListButton) {
   });
 }
 
+els.viraeTrackerButton.addEventListener("click", () => {
+  const tracked = trackedBuilder();
+  if (!tracked) return;
+  const row = els.builderRows.querySelector(`tr[data-code="${CSS.escape(tracked.builderCode)}"]`);
+  if (!row) return;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  state.trackedJumpUntil = Date.now() + 1400;
+  row.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  row.classList.remove("tracked-jump");
+  requestAnimationFrame(() => row.classList.add("tracked-jump"));
+  setTimeout(() => {
+    state.trackedJumpUntil = 0;
+    els.builderRows.querySelector("tr.tracked-builder-row")?.classList.remove("tracked-jump");
+  }, 1400);
+});
+
 // Initial Loading & Visual Setup
 updateSegmentedIndicator();
-window.addEventListener("resize", updateSegmentedIndicator);
+window.addEventListener("resize", () => {
+  updateSegmentedIndicator();
+  scheduleViraeTrackerUpdate();
+});
+window.addEventListener("scroll", scheduleViraeTrackerUpdate, { passive: true });
 
 const builderLoadObserver = new IntersectionObserver((entries) => {
   if (entries.some((entry) => entry.isIntersecting)) {
@@ -1431,7 +1666,8 @@ const builderLoadObserver = new IntersectionObserver((entries) => {
 builderLoadObserver.observe(els.loadMoreBuilders);
 updateBuilderLoadStatus();
 
-loadBuilders({ reset: true }).then(() => {
+loadBuilders({ reset: true }).then(async () => {
+  await ensureTrackedBuilderLoaded();
   // Recalculate indicators after layout settles
   setTimeout(updateSegmentedIndicator, 100);
 }).catch((error) => {
