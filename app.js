@@ -1,3 +1,8 @@
+import {
+  getBuilderMetadata,
+  TRACKED_BUILDER_CODE,
+} from "./data/builder-metadata.js";
+
 const state = {
   period: "MONTH",
   detailRange: "30d",
@@ -25,11 +30,10 @@ const state = {
   mobileScrollPositions: { leaderboard: 0, market: 0 },
 };
 
-const TRACKED_BUILDER_CODE = "0xcb5f0c1b63c47ad9193a5d1a95a2055076eec604be4abb019025dd0e3554a7cc";
-
 const els = {
   leaderboardShell: document.querySelector(".leaderboard-shell"),
   topbar: document.querySelector(".topbar"),
+  viraeNavLink: document.querySelector("#viraeNavLink"),
   builderRows: document.querySelector("#builderRows"),
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
@@ -42,6 +46,7 @@ const els = {
   detailContent: document.querySelector("#detailContent"),
   detailAvatar: document.querySelector("#detailAvatar"),
   detailName: document.querySelector("#detailName"),
+  detailWebsite: document.querySelector("#detailWebsite"),
   detailCode: document.querySelector("#detailCode"),
   detailVolume: document.querySelector("#detailVolume"),
   detailUsers: document.querySelector("#detailUsers"),
@@ -175,6 +180,45 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function safeExternalUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function websiteLabel(value) {
+  const url = safeExternalUrl(value);
+  if (!url) return "";
+  return new URL(url).hostname.replace(/^www\./, "");
+}
+
+function primaryOfficialLink(metadata) {
+  for (const type of ["website", "telegram", "x", "github", "discord"]) {
+    const url = safeExternalUrl(metadata?.links?.[type]);
+    if (url) return { type, url };
+  }
+  return null;
+}
+
+function withBuilderMetadata(builder) {
+  return {
+    ...builder,
+    metadata: getBuilderMetadata(builder?.builderCode),
+  };
+}
+
+function applyCuratedNavigation() {
+  const website = safeExternalUrl(
+    getBuilderMetadata(TRACKED_BUILDER_CODE)?.links?.website,
+  );
+  if (!website || !els.viraeNavLink) return;
+  els.viraeNavLink.href = website;
+}
+
 function initials(name) {
   return (name || "?")
     .split(/[\s.-]+/)
@@ -253,7 +297,10 @@ function builderMatchesSearch(builder, query = searchQuery()) {
   if (!query) return false;
   return (
     builder.builder?.toLowerCase().includes(query) ||
-    builder.builderCode?.toLowerCase().includes(query)
+    builder.builderCode?.toLowerCase().includes(query) ||
+    Object.values(builder.metadata?.links || {}).some(
+      (value) => value.toLowerCase().includes(query),
+    )
   );
 }
 
@@ -333,6 +380,19 @@ function renderBuilders() {
     }
     row.querySelector(".rank-cell").textContent = `#${builder.rank}`;
     row.querySelector(".builder-name").textContent = builder.builder || "Unnamed builder";
+
+    const officialLink = primaryOfficialLink(builder.metadata);
+    const websiteLink = row.querySelector(".builder-website");
+    if (officialLink) {
+      const label = websiteLabel(officialLink.url);
+      websiteLink.href = officialLink.url;
+      websiteLink.title = `Open ${builder.builder || label} official ${officialLink.type}`;
+      websiteLink.setAttribute("aria-label", `Open ${builder.builder || label} official ${officialLink.type} (opens in a new tab)`);
+      websiteLink.querySelector(".builder-website-label").textContent = label;
+      websiteLink.classList.remove("hidden");
+      row.querySelector(".website-empty").classList.add("hidden");
+      websiteLink.addEventListener("click", (event) => event.stopPropagation());
+    }
     
     // Status with premium badge
     const statusEl = row.querySelector(".builder-status");
@@ -351,10 +411,13 @@ function renderBuilders() {
     
     row.querySelector(".volume-cell").textContent = fmtCompactUsd.format(number(builder.volume));
     row.querySelector(".users-cell").textContent = fmtInt.format(number(builder.activeUsers));
-    row.querySelector(".code-cell").textContent = shortCode(builder.builderCode);
+    const codeValue = row.querySelector(".code-value");
+    codeValue.textContent = shortCode(builder.builderCode);
+    codeValue.title = builder.builderCode || "Legacy / empty builder code";
     setAvatar(row.querySelector(".avatar"), builder);
     row.addEventListener("click", () => selectBuilder(builder));
     row.addEventListener("keydown", (event) => {
+      if (event.target.closest("a, button")) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         selectBuilder(builder);
@@ -366,7 +429,7 @@ function renderBuilders() {
   if (!rows.length) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 5;
+    cell.colSpan = 6;
     cell.textContent = state.isLoadingBuilders ? "Loading projects..." : "No builders match the current filters.";
     cell.className = "muted";
     cell.style.textAlign = "center";
@@ -1020,6 +1083,23 @@ function renderDetail() {
   document.body.classList.add("detail-selected");
   setAvatar(els.detailAvatar, builder);
   els.detailName.textContent = builder.builder || "Unnamed builder";
+  const officialLink = primaryOfficialLink(builder.metadata);
+  if (officialLink) {
+    const label = websiteLabel(officialLink.url);
+    els.detailWebsite.href = officialLink.url;
+    els.detailWebsite.title = `Open ${builder.builder || label} official ${officialLink.type}`;
+    els.detailWebsite.setAttribute(
+      "aria-label",
+      `Open ${builder.builder || label} official ${officialLink.type} (opens in a new tab)`,
+    );
+    els.detailWebsite.querySelector(".detail-website-label").textContent = label;
+    els.detailWebsite.classList.remove("hidden");
+  } else {
+    els.detailWebsite.removeAttribute("href");
+    els.detailWebsite.removeAttribute("title");
+    els.detailWebsite.removeAttribute("aria-label");
+    els.detailWebsite.classList.add("hidden");
+  }
   els.detailCode.textContent = builder.builderCode || "Legacy / empty builder code";
   els.detailVolume.textContent = fmtCompactUsd.format(number(builder.volume));
   els.detailUsers.textContent = fmtInt.format(number(builder.activeUsers));
@@ -1191,7 +1271,7 @@ async function loadBuilders({ reset = false } = {}) {
       `/api/builders/leaderboard?timePeriod=${requestedPeriod}&limit=50&offset=${state.nextOffset}`,
     );
     if (requestedPeriod !== state.period) return;
-    state.builders = [...state.builders, ...page];
+    state.builders = [...state.builders, ...page.map(withBuilderMetadata)];
     state.nextOffset += page.length;
     state.hasMoreBuilders = page.length === 50;
   } finally {
@@ -1738,6 +1818,7 @@ els.viraeTrackerButton.addEventListener("click", () => {
 });
 
 // Initial Loading & Visual Setup
+applyCuratedNavigation();
 updateSegmentedIndicator();
 renderMobileNavigation();
 window.addEventListener("resize", () => {

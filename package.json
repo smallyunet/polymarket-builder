@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs",
-    "export:builders": "node scripts/collect-builder-data.mjs"
+    "export:builders": "node scripts/collect-builder-data.mjs",
+    "research:metadata": "node scripts/research-builder-metadata.mjs",
+    "validate:metadata": "node scripts/validate-builder-metadata.mjs"
   }
 }

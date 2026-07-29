@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20260617-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260729-1" />
   </head>
   <body data-mobile-view="leaderboard">
     <a class="skip-link" href="#mainContent">Skip to main content</a>
@@ -31,7 +31,7 @@
         </label>
       </div>
       <nav class="topbar-right">
-        <a href="https://virae.ai/" target="_blank" rel="noopener noreferrer">Virae.ai</a>
+        <a id="viraeNavLink" target="_blank" rel="noopener noreferrer">Virae.ai</a>
         <a href="https://builders.polymarket.com/" target="_blank" rel="noopener noreferrer">Builders</a>
         <a href="https://docs.polymarket.com/api-reference/builders/get-aggregated-builder-leaderboard" target="_blank" rel="noopener noreferrer">API Docs</a>
       </nav>
@@ -66,13 +66,22 @@
           </div>
 
           <div class="table-wrap">
-            <table>
+            <table class="leaderboard-table">
+              <colgroup>
+                <col class="rank-column" />
+                <col class="project-column" />
+                <col class="volume-column" />
+                <col class="users-column" />
+                <col class="website-column" />
+                <col class="code-column" />
+              </colgroup>
               <thead>
                 <tr>
                   <th class="sortable" data-sort="rank">Rank</th>
                   <th class="sortable" data-sort="project">Project</th>
                   <th class="sortable" data-sort="volume" style="text-align: right;">Volume</th>
-                  <th class="sortable" data-sort="users" style="text-align: right;">Users</th>
+                  <th class="sortable users-header" data-sort="users" style="text-align: right;">Users</th>
+                  <th class="website-header">Website</th>
                   <th class="code-header">Builder Code</th>
                 </tr>
               </thead>
@@ -117,7 +126,22 @@
             <div class="detail-head">
               <div class="avatar large" id="detailAvatar"></div>
               <div class="detail-title-area">
-                <h2 id="detailName">Builder</h2>
+                <div class="detail-name-row">
+                  <h2 id="detailName">Builder</h2>
+                  <a
+                    id="detailWebsite"
+                    class="detail-website hidden"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M15 3h6v6" />
+                      <path d="M10 14 21 3" />
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    </svg>
+                    <span class="detail-website-label">Website</span>
+                  </a>
+                </div>
                 <div class="detail-code-row">
                   <span id="detailCode" class="code-cell"></span>
                   <button id="copyCodeButton" class="copy-btn" title="Copy Builder Code" aria-label="Copy Builder Code">
@@ -353,7 +377,22 @@
         </td>
         <td class="volume-cell"></td>
         <td class="users-cell"></td>
-        <td class="code-cell"></td>
+        <td class="website-cell">
+          <a
+            class="builder-website hidden"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 3h6v6"></path>
+              <path d="M10 14 21 3"></path>
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1 2-2V8a2 2 0 0 1 2-2h6"></path>
+            </svg>
+            <span class="builder-website-label"></span>
+          </a>
+          <span class="website-empty">—</span>
+        </td>
+        <td class="code-cell"><span class="code-value"></span></td>
       </tr>
     </template>
 
@@ -375,6 +414,6 @@
       </tr>
     </template>
 
-    <script src="./app.js?v=20260617-2" type="module"></script>
+    <script src="./app.js?v=20260729-1" type="module"></script>
   </body>
 </html>

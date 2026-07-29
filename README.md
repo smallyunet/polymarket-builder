@@ -67,4 +67,37 @@ browser calls Polymarket public APIs directly.
 - `GET https://gamma-api.polymarket.com/markets?condition_ids=...` for
   human-readable market titles and links.
 
+## Builder Metadata
+
+Polymarket's public leaderboard does not include builder websites or social
+profiles. Curated profile links live in `data/builder-metadata.js`, keyed by the
+lowercase, full `builderCode` returned by the leaderboard API:
+
+```js
+["0x…", "Builder name", "pm-wiki-project-slug", {
+  website: "https://example.com/",
+  x: "https://x.com/example",
+  telegram: "https://t.me/example",
+}],
+```
+
+The UI merges this metadata into every loaded leaderboard page. Builders with a
+known official destination get an external-link action in the leaderboard and
+selected-builder detail header. The preferred order is website, Telegram, X,
+GitHub, then Discord. Only HTTPS links are rendered. Every expanded record also
+contains `name`, `source`, and `verifiedAt` for reviewability.
+
+To discover reviewable candidates from the current leaderboard and the pm.wiki
+project directory without changing the curated file:
+
+```sh
+npm run research:metadata
+```
+
+Validate the file after editing:
+
+```sh
+npm run validate:metadata
+```
+
 `/data/trades` is intentionally not wired into the UI because it requires authenticated CLOB API headers and an HMAC signature. The local `server.mjs` proxy is the right place to add that later without exposing secrets in the browser.
