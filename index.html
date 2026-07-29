@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css?v=20260617-2" />
   </head>
-  <body>
+  <body data-mobile-view="leaderboard">
     <a class="skip-link" href="#mainContent">Skip to main content</a>
     <!-- Ambient glowing backgrounds for premium visual style -->
     <div class="ambient-glow glow-1"></div>
@@ -18,7 +18,9 @@
     <header class="topbar">
       <div class="topbar-left">
         <a class="brand" href="./">
-          <span class="brand-mark">P</span>
+          <span class="brand-mark" aria-hidden="true">
+            <img src="./assets/polymarket-icon-blue.svg" alt="" width="34" height="34" />
+          </span>
           <span>Polymarket Builders</span>
         </a>
       </div>
@@ -29,8 +31,9 @@
         </label>
       </div>
       <nav class="topbar-right">
-        <a href="https://builders.polymarket.com/" target="_blank" rel="noreferrer">Builders</a>
-        <a href="https://docs.polymarket.com/api-reference/builders/get-aggregated-builder-leaderboard" target="_blank" rel="noreferrer">API Docs</a>
+        <a href="https://virae.ai/" target="_blank" rel="noopener noreferrer">Virae.ai</a>
+        <a href="https://builders.polymarket.com/" target="_blank" rel="noopener noreferrer">Builders</a>
+        <a href="https://docs.polymarket.com/api-reference/builders/get-aggregated-builder-leaderboard" target="_blank" rel="noopener noreferrer">API Docs</a>
       </nav>
     </header>
 
@@ -38,7 +41,7 @@
       <h1 class="sr-only">Polymarket Builder Explorer</h1>
       <section class="workspace">
         <!-- Left Column: Leaderboard -->
-        <div class="leaderboard-shell spotlight-card">
+        <div id="leaderboardPanel" class="leaderboard-shell spotlight-card">
           <div class="section-heading">
             <h2>Leaderboard</h2>
           </div>
@@ -83,7 +86,7 @@
         </div>
 
         <!-- Right Column: Detail Panel -->
-        <aside class="detail-panel spotlight-card">
+        <aside id="marketVolumePanel" class="detail-panel spotlight-card">
           <!-- Empty State: Global Volume Stacked Chart -->
           <div id="emptyDetail" class="empty-state">
             <div class="empty-state-intro">
@@ -299,6 +302,41 @@
         </div>
       </button>
     </aside>
+
+    <nav class="mobile-primary-nav" aria-label="Primary views">
+      <div class="mobile-primary-nav-inner" role="tablist" aria-label="Dashboard view">
+        <button
+          id="leaderboardTab"
+          class="mobile-primary-tab active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="leaderboardPanel"
+          data-mobile-view="leaderboard"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 21v-8H4v8M14 21V3h-4v18M20 21V8h-4v13M2 21h20" />
+          </svg>
+          <span>Leaderboard</span>
+        </button>
+        <button
+          id="marketVolumeTab"
+          class="mobile-primary-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="marketVolumePanel"
+          data-mobile-view="market"
+          tabindex="-1"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 3v18h18" />
+            <path d="m7 15 4-4 3 3 5-7" />
+          </svg>
+          <span>Market Volume History</span>
+        </button>
+      </div>
+    </nav>
 
     <!-- Leaderboard table row template -->
     <template id="builderRowTemplate">

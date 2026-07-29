@@ -21,6 +21,8 @@ const state = {
   trackedBuilderStatus: "loading",
   trackedBuilderPromise: null,
   trackedJumpUntil: 0,
+  mobileView: document.body.dataset.mobileView === "market" ? "market" : "leaderboard",
+  mobileScrollPositions: { leaderboard: 0, market: 0 },
 };
 
 const TRACKED_BUILDER_CODE = "0xcb5f0c1b63c47ad9193a5d1a95a2055076eec604be4abb019025dd0e3554a7cc";
@@ -86,6 +88,11 @@ const els = {
   viraeTrackerUsers: document.querySelector("#viraeTrackerUsers"),
   viraeVisibleRange: document.querySelector("#viraeVisibleRange"),
   viraeRankMarker: document.querySelector("#viraeRankMarker"),
+  leaderboardPanel: document.querySelector("#leaderboardPanel"),
+  marketVolumePanel: document.querySelector("#marketVolumePanel"),
+  mobileViewTabs: [...document.querySelectorAll("[data-mobile-view]")].filter(
+    (element) => element.matches(".mobile-primary-tab"),
+  ),
 };
 
 const fmtUsd = new Intl.NumberFormat("en-US", {
@@ -1144,6 +1151,7 @@ function render() {
   renderBuilders();
   renderDetail();
   renderViraeTracker();
+  renderMobileNavigation();
 }
 
 function updateBuilderLoadStatus() {
@@ -1446,7 +1454,78 @@ function updateSegmentedIndicator() {
   }
 }
 
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function renderMobileNavigation() {
+  const mobile = isMobileLayout();
+  const activeView = state.mobileView;
+  document.body.dataset.mobileView = activeView;
+
+  for (const tab of els.mobileViewTabs) {
+    const active = tab.dataset.mobileView === activeView;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  }
+
+  const panels = [
+    [els.leaderboardPanel, "leaderboardTab", "leaderboard"],
+    [els.marketVolumePanel, "marketVolumeTab", "market"],
+  ];
+  for (const [panel, labelledBy, view] of panels) {
+    if (mobile) {
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", labelledBy);
+      panel.setAttribute("aria-hidden", String(view !== activeView && !document.body.classList.contains("detail-selected")));
+    } else {
+      panel.removeAttribute("role");
+      panel.removeAttribute("aria-labelledby");
+      panel.removeAttribute("aria-hidden");
+    }
+  }
+
+  if (mobile && activeView === "market" && !state.selected) {
+    renderGlobalVolumeChart();
+  }
+  scheduleViraeTrackerUpdate();
+}
+
+function setMobileView(view, { restoreScroll = true } = {}) {
+  if (!["leaderboard", "market"].includes(view)) return;
+
+  if (view === state.mobileView) {
+    renderMobileNavigation();
+    if (isMobileLayout() && !restoreScroll) {
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+    }
+    return;
+  }
+
+  state.mobileScrollPositions[state.mobileView] = window.scrollY;
+  state.mobileView = view;
+  renderMobileNavigation();
+
+  if (!isMobileLayout()) return;
+  const nextScrollPosition = restoreScroll ? state.mobileScrollPositions[view] : 0;
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: nextScrollPosition, behavior: "auto" });
+  });
+}
+
 // Event Listeners Wire-up
+for (const tab of els.mobileViewTabs) {
+  tab.addEventListener("click", () => setMobileView(tab.dataset.mobileView));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextView = event.key === "ArrowLeft" || event.key === "Home" ? "leaderboard" : "market";
+    setMobileView(nextView);
+    els.mobileViewTabs.find((item) => item.dataset.mobileView === nextView)?.focus();
+  });
+}
+
 document.querySelectorAll("[data-period]").forEach((button) => {
   button.addEventListener("click", async () => {
     document.querySelectorAll("[data-period]").forEach((item) => item.classList.remove("active"));
@@ -1628,6 +1707,7 @@ if (els.backToListButton) {
     state.trades = [];
     state.nextCursor = null;
     render();
+    setMobileView("leaderboard", { restoreScroll: false });
   });
 }
 
@@ -1649,8 +1729,10 @@ els.viraeTrackerButton.addEventListener("click", () => {
 
 // Initial Loading & Visual Setup
 updateSegmentedIndicator();
+renderMobileNavigation();
 window.addEventListener("resize", () => {
   updateSegmentedIndicator();
+  renderMobileNavigation();
   scheduleViraeTrackerUpdate();
 });
 window.addEventListener("scroll", scheduleViraeTrackerUpdate, { passive: true });
