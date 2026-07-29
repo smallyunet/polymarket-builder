@@ -85,6 +85,23 @@ async function handleApi(req, res, requestUrl) {
     return;
   }
 
+  if (requestUrl.pathname === "/api/markets") {
+    const conditionIds = requestUrl.searchParams
+      .getAll("condition_ids")
+      .filter((value) => /^0x[a-fA-F0-9]{64}$/.test(value))
+      .slice(0, 50);
+    if (!conditionIds.length) {
+      sendJson(res, 400, { error: "condition_ids must contain at least one 32-byte hex value" });
+      return;
+    }
+    const upstream = new URL("https://gamma-api.polymarket.com/markets");
+    for (const conditionId of conditionIds) {
+      upstream.searchParams.append("condition_ids", conditionId);
+    }
+    await proxyJson(res, upstream);
+    return;
+  }
+
   sendJson(res, 404, { error: "Unknown API route" });
 }
 

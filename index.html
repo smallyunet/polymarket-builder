@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./styles.css?v=20260617-2" />
   </head>
   <body>
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
     <!-- Ambient glowing backgrounds for premium visual style -->
     <div class="ambient-glow glow-1"></div>
     <div class="ambient-glow glow-2"></div>
@@ -33,7 +34,8 @@
       </nav>
     </header>
 
-    <main>
+    <main id="mainContent" tabindex="-1">
+      <h1 class="sr-only">Polymarket Builder Explorer</h1>
       <section class="workspace">
         <!-- Left Column: Leaderboard -->
         <div class="leaderboard-shell spotlight-card">
@@ -91,7 +93,7 @@
             
             <div class="chart-container" style="width: 100%;">
               <div class="chart-header">
-                <span class="chart-title">Global Builder Volume (Past 18 Days)</span>
+                <span id="globalChartTitle" class="chart-title">Daily Builder Volume — Last 18 Days</span>
               </div>
               <div style="position: relative; width: 100%; margin-top: 10px;">
                 <div id="globalYAxis" class="chart-y-axis"></div>
@@ -115,14 +117,14 @@
                 <h2 id="detailName">Builder</h2>
                 <div class="detail-code-row">
                   <span id="detailCode" class="code-cell"></span>
-                  <button id="copyCodeButton" class="copy-btn" title="Copy Builder Code">
+                  <button id="copyCodeButton" class="copy-btn" title="Copy Builder Code" aria-label="Copy Builder Code">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="detail-stats">
+            <div class="detail-stats" aria-label="Builder and loaded trade metrics">
               <article>
                 <span>Leaderboard Volume</span>
                 <strong id="detailVolume">$0</strong>
@@ -131,12 +133,40 @@
                 <span>Leaderboard Users</span>
                 <strong id="detailUsers">0</strong>
               </article>
+              <article>
+                <span>Loaded Trades</span>
+                <strong id="detailTradeCount">0</strong>
+              </article>
+              <article>
+                <span>Loaded Trade Value</span>
+                <strong id="detailTradeValue">$0</strong>
+              </article>
+              <article>
+                <span>Trade Fees</span>
+                <strong id="detailFees">$0</strong>
+              </article>
+              <article>
+                <span>Builder Fees</span>
+                <strong id="detailBuilderFees">$0</strong>
+              </article>
+              <article>
+                <span>Unique Owners</span>
+                <strong id="detailOwners">0</strong>
+              </article>
+              <article>
+                <span>Maker / Taker</span>
+                <strong id="detailTradeMix">—</strong>
+              </article>
+              <article>
+                <span>Confirmed / Mined</span>
+                <strong id="detailStatus">—</strong>
+              </article>
             </div>
 
             <div class="query-strip detail-range-strip">
               <div class="range-copy">
                 <span>Detail Window</span>
-                <strong id="detailRangeLabel">Last 30 days</strong>
+                <strong id="detailRangeLabel">Last 30 calendar days</strong>
               </div>
               <div class="range-tabs" role="tablist" aria-label="Detail time window">
                 <button data-detail-range="7d" type="button">7d</button>
@@ -146,6 +176,27 @@
             </div>
 
             <div class="query-strip detail-actions-strip">
+              <details class="trade-filters">
+                <summary>Advanced API filters</summary>
+                <div class="filter-grid">
+                  <label>
+                    <span>Trade ID</span>
+                    <input id="tradeIdFilter" autocomplete="off" placeholder="Exact trade ID" />
+                  </label>
+                  <label>
+                    <span>Market condition ID</span>
+                    <input id="marketFilter" autocomplete="off" placeholder="0x…" />
+                  </label>
+                  <label>
+                    <span>Asset token ID</span>
+                    <input id="assetFilter" autocomplete="off" placeholder="Token ID" />
+                  </label>
+                </div>
+                <div class="filter-actions">
+                  <button id="applyTradeFilters" class="btn btn-outline btn-sm" type="button">Apply filters</button>
+                  <button id="clearTradeFilters" class="btn btn-quiet btn-sm" type="button">Clear</button>
+                </div>
+              </details>
               <div class="query-buttons">
                 <button id="loadNextTrades" class="btn btn-outline btn-sm" type="button">Load Next Page</button>
                 <button id="downloadJson" class="btn btn-outline btn-sm" type="button">
@@ -159,29 +210,42 @@
               </div>
             </div>
 
-            <div class="detail-section-title">Volume Series Timeline</div>
-            <div class="chart-container" style="padding-top: 0; padding-bottom: 24px;">
-              <div style="position: relative; width: 100%;">
-                <div id="singleYAxis" class="chart-y-axis"></div>
-                <div id="volumeBars" class="single-bar-chart"></div>
+            <div class="detail-section-title trend-heading">
+              <span>Builder Trend</span>
+              <div class="metric-tabs" role="tablist" aria-label="Trend metric">
+                <button class="active" data-trend-metric="volume" type="button">Volume</button>
+                <button data-trend-metric="activeUsers" type="button">Users</button>
+                <button data-trend-metric="rank" type="button">Rank</button>
               </div>
+            </div>
+            <div class="chart-container trend-container">
+              <div id="trendSummary" class="trend-summary" aria-live="polite"></div>
+              <div id="trendChart" class="trend-chart" role="img" aria-label="Builder time-series chart"></div>
             </div>
 
             <div class="detail-section-title">
               <span>Attributed Trades</span>
-              <span id="cursorState" class="muted" style="text-transform: none; font-weight: normal;">No cursor</span>
+              <span id="cursorState" class="muted cursor-state">No data loaded</span>
             </div>
+
+            <div id="tradeError" class="inline-error hidden" role="alert"></div>
 
             <div class="trades-table-wrap">
               <table class="trades-table">
                 <thead>
                   <tr>
                     <th>Time</th>
+                    <th>Type</th>
                     <th>Side</th>
-                    <th style="text-align: right;">Size (USDC)</th>
-                    <th style="text-align: right;">Price</th>
+                    <th class="numeric">Value</th>
+                    <th class="numeric">Shares</th>
+                    <th class="numeric">Price</th>
                     <th>Outcome</th>
+                    <th>Status</th>
+                    <th class="numeric">Fee</th>
+                    <th>Maker</th>
                     <th>Market</th>
+                    <th>Tx</th>
                   </tr>
                 </thead>
                 <tbody id="tradeRows"></tbody>
@@ -190,10 +254,10 @@
 
             <!-- Collapsible raw JSON data -->
             <div class="raw-data-accordion">
-              <div class="accordion-header" id="accordionHeader">
+              <button class="accordion-header" id="accordionHeader" type="button" aria-expanded="false" aria-controls="accordionContent">
                 <span>Raw API Data (Trades JSON)</span>
                 <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </div>
+              </button>
               <div class="accordion-content" id="accordionContent">
                 <pre id="rawTrades">[]</pre>
               </div>
@@ -222,15 +286,21 @@
       </tr>
     </template>
 
-    <!-- Trade row template -->
+    <!-- Trade row template. Click or press Enter to expand every API field. -->
     <template id="tradeRowTemplate">
-      <tr>
+      <tr class="trade-row" tabindex="0" aria-expanded="false">
         <td class="trade-time" style="color: var(--ink-muted);"></td>
+        <td><span class="trade-type"></span></td>
         <td><span class="trade-side"></span></td>
-        <td class="trade-size" style="text-align: right; font-weight: 600;"></td>
-        <td class="trade-price" style="text-align: right; color: var(--ink-muted); font-family: 'JetBrains Mono', monospace;"></td>
+        <td class="trade-size numeric"></td>
+        <td class="trade-shares numeric"></td>
+        <td class="trade-price numeric"></td>
         <td class="trade-outcome" style="color: var(--ink-muted);"></td>
-        <td class="trade-market" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted);" title=""></td>
+        <td><span class="trade-status"></span></td>
+        <td class="trade-fee numeric"></td>
+        <td class="trade-maker mono"></td>
+        <td class="trade-market"></td>
+        <td class="trade-tx"></td>
       </tr>
     </template>
 

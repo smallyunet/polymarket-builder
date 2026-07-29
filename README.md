@@ -64,5 +64,7 @@ browser calls Polymarket public APIs directly.
 - `GET https://data-api.polymarket.com/v1/builders/leaderboard`
 - `GET https://data-api.polymarket.com/v1/builders/volume`
 - `GET https://clob.polymarket.com/builder/trades`
+- `GET https://gamma-api.polymarket.com/markets?condition_ids=...` for
+  human-readable market titles and links.
 
 `/data/trades` is intentionally not wired into the UI because it requires authenticated CLOB API headers and an HMAC signature. The local `server.mjs` proxy is the right place to add that later without exposing secrets in the browser.

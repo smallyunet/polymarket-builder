@@ -1,6 +1,7 @@
 const state = {
   period: "MONTH",
   detailRange: "30d",
+  trendMetric: "volume",
   builders: [],
   volumes: [],
   detailVolumes: [],
@@ -8,6 +9,10 @@ const state = {
   selected: null,
   trades: [],
   nextCursor: null,
+  tradeMeta: { limit: 0, count: 0 },
+  tradeFilters: { id: "", market: "", asset_id: "" },
+  marketMetadata: new Map(),
+  volumeLoading: null,
   loading: false,
   isLoadingBuilders: false,
   hasMoreBuilders: true,
@@ -31,19 +36,33 @@ const els = {
   detailCode: document.querySelector("#detailCode"),
   detailVolume: document.querySelector("#detailVolume"),
   detailUsers: document.querySelector("#detailUsers"),
+  detailTradeCount: document.querySelector("#detailTradeCount"),
+  detailTradeValue: document.querySelector("#detailTradeValue"),
+  detailFees: document.querySelector("#detailFees"),
+  detailBuilderFees: document.querySelector("#detailBuilderFees"),
+  detailOwners: document.querySelector("#detailOwners"),
+  detailTradeMix: document.querySelector("#detailTradeMix"),
+  detailStatus: document.querySelector("#detailStatus"),
   detailRangeLabel: document.querySelector("#detailRangeLabel"),
   rawTrades: document.querySelector("#rawTrades"),
   cursorState: document.querySelector("#cursorState"),
-  volumeBars: document.querySelector("#volumeBars"),
+  trendChart: document.querySelector("#trendChart"),
+  trendSummary: document.querySelector("#trendSummary"),
   loadNextTrades: document.querySelector("#loadNextTrades"),
   downloadJson: document.querySelector("#downloadJson"),
   downloadCsv: document.querySelector("#downloadCsv"),
+  tradeError: document.querySelector("#tradeError"),
+  tradeIdFilter: document.querySelector("#tradeIdFilter"),
+  marketFilter: document.querySelector("#marketFilter"),
+  assetFilter: document.querySelector("#assetFilter"),
+  applyTradeFilters: document.querySelector("#applyTradeFilters"),
+  clearTradeFilters: document.querySelector("#clearTradeFilters"),
   
   // Newly added elements
   globalVolumeChart: document.querySelector("#globalVolumeChart"),
   globalChartLegend: document.querySelector("#globalChartLegend"),
+  globalChartTitle: document.querySelector("#globalChartTitle"),
   globalYAxis: document.querySelector("#globalYAxis"),
-  singleYAxis: document.querySelector("#singleYAxis"),
   copyCodeButton: document.querySelector("#copyCodeButton"),
   tradeRows: document.querySelector("#tradeRows"),
   tradeRowTemplate: document.querySelector("#tradeRowTemplate"),
@@ -66,11 +85,18 @@ const fmtCompactUsd = new Intl.NumberFormat("en-US", {
 });
 
 const fmtInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const fmtDecimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
+const fmtPreciseUsd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 4,
+});
 
 const detailRanges = {
-  "7d": { label: "Last 7 days", days: 7, volumePeriod: "WEEK" },
-  "30d": { label: "Last 30 days", days: 30, volumePeriod: "MONTH" },
-  all: { label: "All time", days: null, volumePeriod: "ALL" },
+  "7d": { label: "Last 7 calendar days", days: 7 },
+  "30d": { label: "Last 30 calendar days", days: 30 },
+  all: { label: "All available daily history", days: null },
 };
 
 // Tooltip Utility
@@ -116,6 +142,15 @@ function shortCode(code) {
   return `${code.slice(0, 10)}...${code.slice(-8)}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function initials(name) {
   return (name || "?")
     .split(/[\s.-]+/)
@@ -130,7 +165,7 @@ function setAvatar(el, builder) {
   if (builder.builderLogo) {
     const img = document.createElement("img");
     img.src = builder.builderLogo;
-    img.alt = "";
+    img.alt = `${builder.builder || "Builder"} logo`;
     img.loading = "lazy";
     img.referrerPolicy = "no-referrer";
     img.addEventListener("error", () => {
@@ -158,6 +193,9 @@ function apiUrl(path) {
   }
   if (url.pathname === "/api/builder/trades") {
     return `https://clob.polymarket.com/builder/trades${url.search}`;
+  }
+  if (url.pathname === "/api/markets") {
+    return `https://gamma-api.polymarket.com/markets${url.search}`;
   }
   return path;
 }
@@ -236,8 +274,10 @@ function renderBuilders() {
   // Update header classes to show sorting arrows
   document.querySelectorAll("th.sortable").forEach((th) => {
     th.classList.remove("asc", "desc");
+    th.setAttribute("aria-sort", "none");
     if (th.dataset.sort === state.sortColumn) {
       th.classList.add(state.sortDirection);
+      th.setAttribute("aria-sort", state.sortDirection === "asc" ? "ascending" : "descending");
     }
   });
 
@@ -339,8 +379,14 @@ function renderGlobalVolumeChart() {
   const sortedBuilderCodes = Object.keys(builderTotals).sort((a, b) => builderTotals[b] - builderTotals[a]);
   const topBuilderCodes = sortedBuilderCodes.slice(0, 8);
 
-  // Map builder code to name
+  els.globalChartTitle.textContent = `Daily Builder Volume — Last ${dates.length} Day${dates.length === 1 ? "" : "s"}`;
+
+  // Map builder code to name. Volume rows are authoritative even when the
+  // matching builder has not yet been loaded through leaderboard pagination.
   const codeToName = {};
+  for (const row of state.volumes) {
+    if (row.builderCode && row.builder) codeToName[row.builderCode] = row.builder;
+  }
   for (const builder of state.builders) {
     codeToName[builder.builderCode] = builder.builder || "Unnamed builder";
   }
@@ -396,7 +442,7 @@ function renderGlobalVolumeChart() {
         const dateObj = new Date(dt + "T00:00:00");
         const dateFormatted = dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
         const tooltipHtml = `
-          <div style="font-weight: 600; margin-bottom: 2px;">${builderName}</div>
+          <div style="font-weight: 600; margin-bottom: 2px;">${escapeHtml(builderName)}</div>
           <div style="color: var(--blue-hover); font-weight: 700; font-size: 13px;">${fmtUsd.format(vol)}</div>
           <div style="color: var(--ink-subtle); font-size: 10px; margin-top: 2px;">${dateFormatted}</div>
         `;
@@ -480,72 +526,212 @@ function renderGlobalVolumeChart() {
   }
 }
 
-function renderVolumeBars() {
-  els.volumeBars.innerHTML = "";
-  els.singleYAxis.innerHTML = "";
-  
+function detailTrendRows() {
+  if (!state.selected) return [];
+  const rows = state.detailVolumes
+    .filter((row) => row.builderCode === state.selected.builderCode && row.dt)
+    .sort((a, b) => new Date(a.dt) - new Date(b.dt));
+  const days = detailRanges[state.detailRange].days;
+  if (!days || !rows.length) return rows;
+  const lastDate = new Date(rows.at(-1).dt);
+  const cutoff = new Date(lastDate);
+  cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+  return rows.filter((row) => new Date(row.dt) >= cutoff);
+}
+
+function trendMetricConfig() {
+  if (state.trendMetric === "activeUsers") {
+    return { label: "Active users", format: (value) => fmtInt.format(value), rank: false };
+  }
+  if (state.trendMetric === "rank") {
+    return { label: "Rank", format: (value) => `#${fmtInt.format(value)}`, rank: true };
+  }
+  return { label: "Volume", format: (value) => fmtCompactUsd.format(value), rank: false };
+}
+
+function createSvgElement(name, attributes = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (const [key, value] of Object.entries(attributes)) el.setAttribute(key, value);
+  return el;
+}
+
+function renderTrendChart() {
+  els.trendChart.innerHTML = "";
+  els.trendSummary.textContent = "";
   if (!state.selected) return;
 
-  const rows = state.detailVolumes
-    .filter((row) => row.builderCode === state.selected.builderCode)
-    .sort((a, b) => new Date(a.dt) - new Date(b.dt))
-    .slice(state.detailRange === "7d" ? -7 : -18);
-
+  const rows = detailTrendRows();
+  const metric = trendMetricConfig();
   if (!rows.length) {
-    els.volumeBars.innerHTML = `<span class="muted" style="margin: auto;">No time-series rows for this window.</span>`;
+    els.trendChart.innerHTML = '<span class="muted empty-chart">No daily records for this builder and window.</span>';
+    els.trendChart.setAttribute("aria-label", `No ${metric.label.toLowerCase()} history available`);
     return;
   }
 
-  const max = Math.max(...rows.map((row) => number(row.volume)), 1);
+  const values = rows.map((row) => number(row[state.trendMetric]));
+  const first = values[0];
+  const latest = values.at(-1);
+  const change = latest - first;
+  const firstDate = new Date(rows[0].dt);
+  const lastDate = new Date(rows.at(-1).dt);
+  const dateFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const direction = metric.rank
+    ? (change < 0 ? `${fmtInt.format(Math.abs(change))} places up` : change > 0 ? `${fmtInt.format(change)} places down` : "unchanged")
+    : `${change >= 0 ? "+" : "−"}${metric.format(Math.abs(change))}`;
+  els.trendSummary.textContent = `${rows.length} daily records · ${dateFormat.format(firstDate)} – ${dateFormat.format(lastDate)} · Latest ${metric.format(latest)} · ${direction}`;
+  els.trendChart.setAttribute(
+    "aria-label",
+    `${metric.label} trend for ${state.selected.builder || "builder"} from ${dateFormat.format(firstDate)} to ${dateFormat.format(lastDate)}. Latest ${metric.format(latest)}.`,
+  );
 
-  // Render Y Axis
-  renderYAxis(els.singleYAxis, max);
+  const width = 720;
+  const height = 236;
+  const pad = { left: 60, right: 18, top: 18, bottom: 34 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  if (min === max) {
+    min = Math.max(0, min - 1);
+    max += 1;
+  }
+  const x = (index) => pad.left + (index / Math.max(1, rows.length - 1)) * plotWidth;
+  const y = (value) => {
+    const ratio = (value - min) / (max - min);
+    return pad.top + (metric.rank ? ratio : 1 - ratio) * plotHeight;
+  };
 
-  rows.forEach((row, idx) => {
-    const vol = number(row.volume);
-    const pct = (vol / max) * 100;
-
-    const column = document.createElement("div");
-    column.className = "single-bar-column";
-
-    const fill = document.createElement("div");
-    fill.className = "single-bar-fill";
-    fill.style.height = "0%"; // Initial height for transition
-
-    const dateObj = new Date(row.dt.split("T")[0] + "T00:00:00");
-    const dateFormatted = dateObj.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-    const dateFormattedFull = dateObj.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-
-    const tooltipHtml = `
-      <div style="font-weight: 600; margin-bottom: 2px;">${state.selected.builder || 'Builder'}</div>
-      <div style="color: var(--blue-hover); font-weight: 700; font-size: 13px;">${fmtUsd.format(vol)}</div>
-      <div style="color: var(--ink-subtle); font-size: 10px; margin-top: 2px;">${dateFormattedFull}</div>
-    `;
-    fill.addEventListener("mouseover", (e) => showTooltip(e, tooltipHtml));
-    fill.addEventListener("mousemove", positionTooltip);
-    fill.addEventListener("mouseout", hideTooltip);
-
-    column.append(fill);
-
-    const label = document.createElement("span");
-    label.className = "single-bar-label";
-    label.textContent = dateFormatted;
-    column.append(label);
-
-    els.volumeBars.append(column);
-
-    // Staggered slide-up entry animation
-    setTimeout(() => {
-      fill.style.height = `${Math.max(3, pct)}%`;
-    }, 50 + idx * 25);
+  const svg = createSvgElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    preserveAspectRatio: "none",
+    "aria-hidden": "true",
   });
+
+  for (let index = 0; index <= 4; index += 1) {
+    const lineY = pad.top + (index / 4) * plotHeight;
+    svg.append(createSvgElement("line", {
+      x1: pad.left,
+      x2: width - pad.right,
+      y1: lineY,
+      y2: lineY,
+      class: "trend-grid-line",
+    }));
+    const rawValue = metric.rank
+      ? min + (index / 4) * (max - min)
+      : max - (index / 4) * (max - min);
+    const label = createSvgElement("text", {
+      x: pad.left - 8,
+      y: lineY + 4,
+      class: "trend-axis-label",
+      "text-anchor": "end",
+    });
+    label.textContent = metric.format(rawValue);
+    svg.append(label);
+  }
+
+  const areaPoints = rows.map((row, index) => `${x(index)},${y(number(row[state.trendMetric]))}`);
+  const area = createSvgElement("path", {
+    d: `M ${pad.left} ${pad.top + plotHeight} L ${areaPoints.join(" L ")} L ${x(rows.length - 1)} ${pad.top + plotHeight} Z`,
+    class: "trend-area",
+  });
+  const path = createSvgElement("polyline", {
+    points: areaPoints.join(" "),
+    class: "trend-line",
+  });
+  svg.append(area, path);
+
+  const labelIndexes = [...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1])];
+  for (const index of labelIndexes) {
+    const label = createSvgElement("text", {
+      x: x(index),
+      y: height - 8,
+      class: "trend-axis-label",
+      "text-anchor": index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle",
+    });
+    label.textContent = new Date(rows[index].dt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    svg.append(label);
+  }
+
+  rows.forEach((row, index) => {
+    const value = number(row[state.trendMetric]);
+    const point = createSvgElement("circle", {
+      cx: x(index),
+      cy: y(value),
+      r: rows.length > 90 ? 3 : 4,
+      class: "trend-point",
+      tabindex: "0",
+    });
+    const fullDate = dateFormat.format(new Date(row.dt));
+    const title = createSvgElement("title");
+    title.textContent = `${metric.label}: ${metric.format(value)} — ${fullDate}`;
+    point.append(title);
+    svg.append(point);
+  });
+
+  const crosshair = createSvgElement("g", { class: "trend-crosshair" });
+  const verticalLine = createSvgElement("line", {
+    y1: pad.top,
+    y2: pad.top + plotHeight,
+    class: "trend-crosshair-line",
+  });
+  const horizontalLine = createSvgElement("line", {
+    x1: pad.left,
+    x2: width - pad.right,
+    class: "trend-crosshair-line",
+  });
+  const activePoint = createSvgElement("circle", {
+    r: 6,
+    class: "trend-crosshair-point",
+  });
+  crosshair.append(verticalLine, horizontalLine, activePoint);
+  svg.append(crosshair);
+
+  const hitArea = createSvgElement("rect", {
+    x: pad.left,
+    y: pad.top,
+    width: plotWidth,
+    height: plotHeight,
+    class: "trend-hit-area",
+  });
+  let activeIndex = -1;
+  const activateCrosshair = (event) => {
+    const bounds = svg.getBoundingClientRect();
+    const pointerX = ((event.clientX - bounds.left) / bounds.width) * width;
+    const ratio = Math.min(1, Math.max(0, (pointerX - pad.left) / plotWidth));
+    const index = Math.round(ratio * Math.max(0, rows.length - 1));
+    const row = rows[index];
+    const value = number(row[state.trendMetric]);
+    const pointX = x(index);
+    const pointY = y(value);
+    verticalLine.setAttribute("x1", pointX);
+    verticalLine.setAttribute("x2", pointX);
+    horizontalLine.setAttribute("y1", pointY);
+    horizontalLine.setAttribute("y2", pointY);
+    activePoint.setAttribute("cx", pointX);
+    activePoint.setAttribute("cy", pointY);
+    crosshair.classList.add("visible");
+
+    if (activeIndex !== index) {
+      const fullDate = dateFormat.format(new Date(row.dt));
+      showTooltip(
+        event,
+        `<div class="tooltip-title">${metric.label}: ${metric.format(value)}</div><div class="tooltip-subtitle">${fullDate} · nearest daily point</div>`,
+      );
+      activeIndex = index;
+    } else {
+      positionTooltip(event);
+    }
+  };
+  hitArea.addEventListener("pointermove", activateCrosshair);
+  hitArea.addEventListener("pointerdown", activateCrosshair);
+  hitArea.addEventListener("pointerleave", () => {
+    activeIndex = -1;
+    crosshair.classList.remove("visible");
+    hideTooltip();
+  });
+  svg.append(hitArea);
+
+  els.trendChart.append(svg);
 }
 
 function updateAccordionHeight() {
@@ -554,56 +740,210 @@ function updateAccordionHeight() {
   }
 }
 
-function renderTrades() {
-  els.rawTrades.textContent = JSON.stringify(state.trades, null, 2);
-  els.cursorState.textContent = state.nextCursor && state.nextCursor !== "LTE=" ? `next_cursor: ${state.nextCursor}` : "End of pages";
-  els.loadNextTrades.disabled = !state.nextCursor || state.nextCursor === "LTE=" || state.loading;
+function shortValue(value, start = 8, end = 6) {
+  const text = String(value || "");
+  if (!text) return "—";
+  if (text.length <= start + end + 3) return text;
+  return `${text.slice(0, start)}…${text.slice(-end)}`;
+}
 
-  // Render Trades Table Rows
+function normalizedStatus(value) {
+  return String(value || "Unknown").replace(/^TRADE_STATUS_/, "").replaceAll("_", " ");
+}
+
+function marketUrl(metadata) {
+  if (metadata?.eventSlug) return `https://polymarket.com/event/${encodeURIComponent(metadata.eventSlug)}`;
+  if (metadata?.slug) return `https://polymarket.com/market/${encodeURIComponent(metadata.slug)}`;
+  return "";
+}
+
+function renderTradeStats() {
+  const trades = state.trades;
+  const sum = (field) => trades.reduce((total, trade) => total + number(trade[field]), 0);
+  const owners = new Set(trades.map((trade) => trade.owner).filter(Boolean));
+  const makers = trades.filter((trade) => String(trade.tradeType).toUpperCase() === "MAKER").length;
+  const takers = trades.filter((trade) => String(trade.tradeType).toUpperCase() === "TAKER").length;
+  const settled = trades.filter((trade) => ["CONFIRMED", "MINED"].includes(normalizedStatus(trade.status))).length;
+
+  els.detailTradeCount.textContent = fmtInt.format(trades.length);
+  els.detailTradeValue.textContent = fmtCompactUsd.format(sum("sizeUsdc"));
+  els.detailFees.textContent = fmtPreciseUsd.format(sum("feeUsdc"));
+  els.detailBuilderFees.textContent = fmtPreciseUsd.format(sum("builderFee"));
+  els.detailOwners.textContent = fmtInt.format(owners.size);
+  els.detailTradeMix.textContent = trades.length ? `${fmtInt.format(makers)} / ${fmtInt.format(takers)}` : "—";
+  els.detailStatus.textContent = trades.length ? `${Math.round((settled / trades.length) * 100)}%` : "—";
+}
+
+function appendDetailValue(container, label, value, href = "") {
+  const item = document.createElement("div");
+  item.className = "trade-detail-item";
+  const key = document.createElement("span");
+  key.textContent = label;
+  const content = href ? document.createElement("a") : document.createElement("code");
+  content.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
+  if (href) {
+    content.href = href;
+    content.target = "_blank";
+    content.rel = "noreferrer";
+  }
+  item.append(key, content);
+  container.append(item);
+}
+
+function toggleTradeDetails(row, trade) {
+  const existing = row.nextElementSibling;
+  if (existing?.classList.contains("trade-detail-row")) {
+    existing.remove();
+    row.setAttribute("aria-expanded", "false");
+    return;
+  }
+
+  const detailRow = document.createElement("tr");
+  detailRow.className = "trade-detail-row";
+  const cell = document.createElement("td");
+  cell.colSpan = 12;
+  const grid = document.createElement("div");
+  grid.className = "trade-detail-grid";
+  const metadata = state.marketMetadata.get(trade.market);
+  const fields = [
+    ["Trade ID", trade.id],
+    ["Trade type", trade.tradeType],
+    ["Taker order hash", trade.takerOrderHash],
+    ["Builder field", trade.builder],
+    ["Builder code", trade.builderCode],
+    ["Market condition ID", trade.market],
+    ["Asset token ID", trade.assetId],
+    ["Side", trade.side],
+    ["Shares", trade.size],
+    ["Value (USDC)", trade.sizeUsdc],
+    ["Price", trade.price],
+    ["Status", trade.status],
+    ["Outcome", trade.outcome],
+    ["Outcome index", trade.outcomeIndex],
+    ["Owner ID", trade.owner],
+    ["Maker address", trade.maker],
+    ["Match time", parseTradeTime(trade.matchTime)?.toISOString() || trade.matchTime],
+    ["Bucket index", trade.bucketIndex],
+    ["Fee", trade.fee],
+    ["Fee (USDC)", trade.feeUsdc],
+    ["Builder fee", trade.builderFee],
+    ["Created at", trade.createdAt],
+    ["Updated at", trade.updatedAt],
+  ];
+  for (const [label, value] of fields) appendDetailValue(grid, label, value);
+  if (metadata?.question) appendDetailValue(grid, "Market title", metadata.question, marketUrl(metadata));
+  if (trade.transactionHash) {
+    appendDetailValue(
+      grid,
+      "Transaction hash",
+      trade.transactionHash,
+      `https://polygonscan.com/tx/${encodeURIComponent(trade.transactionHash)}`,
+    );
+  }
+  cell.append(grid);
+  detailRow.append(cell);
+  row.after(detailRow);
+  row.setAttribute("aria-expanded", "true");
+}
+
+function renderTrades() {
+  els.rawTrades.textContent = JSON.stringify({
+    limit: state.tradeMeta.limit,
+    count: state.tradeMeta.count,
+    next_cursor: state.nextCursor,
+    loaded_count: state.trades.length,
+    data: state.trades,
+  }, null, 2);
+  const hasMore = state.nextCursor && state.nextCursor !== "LTE=";
+  const pageMeta = state.tradeMeta.limit
+    ? ` · last page ${fmtInt.format(state.tradeMeta.count)}/${fmtInt.format(state.tradeMeta.limit)}`
+    : "";
+  els.cursorState.textContent = state.loading
+    ? `${fmtInt.format(state.trades.length)} loaded · loading…`
+    : `${fmtInt.format(state.trades.length)} loaded${pageMeta} · ${hasMore ? "more available" : "end reached"}`;
+  els.loadNextTrades.disabled = !hasMore || state.loading;
+  renderTradeStats();
+
   els.tradeRows.innerHTML = "";
-  
   if (state.trades.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 6;
-    cell.className = "muted";
-    cell.style.textAlign = "center";
-    cell.textContent = "No trades attributed in this period.";
+    cell.colSpan = 12;
+    cell.className = "muted empty-table-cell";
+    cell.textContent = "No trades attributed for this builder, window, and filter set.";
     row.append(cell);
     els.tradeRows.append(row);
   } else {
     for (const trade of state.trades) {
       const row = els.tradeRowTemplate.content.firstElementChild.cloneNode(true);
-      
       const tradeTime = parseTradeTime(trade.matchTime) || parseTradeTime(trade.createdAt);
-      const timeStr = tradeTime ? tradeTime.toLocaleString(undefined, {
+      row.querySelector(".trade-time").textContent = tradeTime ? tradeTime.toLocaleString(undefined, {
         month: "short",
         day: "numeric",
         hour: "2-digit",
-        minute: "2-digit"
-      }) : "-";
-      row.querySelector(".trade-time").textContent = timeStr;
-      
+        minute: "2-digit",
+      }) : "—";
+
+      const type = String(trade.tradeType || "Unknown").toUpperCase();
+      const typeEl = row.querySelector(".trade-type");
+      typeEl.textContent = type;
+      typeEl.classList.add(type === "MAKER" ? "maker" : "taker");
+
       const sideEl = row.querySelector(".trade-side");
-      const side = (trade.side || "BUY").toUpperCase();
+      const side = String(trade.side || "Unknown").toUpperCase();
       sideEl.textContent = side;
-      if (side === "BUY") {
-        sideEl.classList.add("buy");
-      } else {
-        sideEl.classList.add("sell");
+      sideEl.classList.add(side === "BUY" ? "buy" : "sell");
+
+      row.querySelector(".trade-size").textContent = fmtPreciseUsd.format(number(trade.sizeUsdc));
+      row.querySelector(".trade-shares").textContent = fmtDecimal.format(number(trade.size));
+      row.querySelector(".trade-price").textContent = number(trade.price).toFixed(4);
+      row.querySelector(".trade-outcome").textContent = trade.outcome || "—";
+
+      const status = normalizedStatus(trade.status);
+      const statusEl = row.querySelector(".trade-status");
+      statusEl.textContent = status;
+      statusEl.className = `trade-status ${status.toLowerCase().replaceAll(" ", "-")}`;
+      row.querySelector(".trade-fee").textContent = fmtPreciseUsd.format(number(trade.feeUsdc));
+      row.querySelector(".trade-maker").textContent = shortValue(trade.maker);
+      row.querySelector(".trade-maker").title = trade.maker || "";
+
+      const metadata = state.marketMetadata.get(trade.market);
+      const marketEl = row.querySelector(".trade-market");
+      const marketLink = marketUrl(metadata);
+      const marketContent = marketLink ? document.createElement("a") : document.createElement("span");
+      marketContent.textContent = metadata?.question || shortValue(trade.market, 10, 8);
+      marketContent.title = metadata?.question || trade.market || "";
+      if (marketLink) {
+        marketContent.href = marketLink;
+        marketContent.target = "_blank";
+        marketContent.rel = "noreferrer";
       }
-      
-      row.querySelector(".trade-size").textContent = fmtUsd.format(number(trade.sizeUsdc));
-      
-      const priceVal = number(trade.price);
-      row.querySelector(".trade-price").textContent = priceVal.toFixed(2);
-      
-      row.querySelector(".trade-outcome").textContent = trade.outcome || "-";
-      
-      const mktEl = row.querySelector(".trade-market");
-      mktEl.textContent = trade.market || "Unknown market";
-      mktEl.title = trade.market || "";
-      
+      marketEl.append(marketContent);
+
+      const txEl = row.querySelector(".trade-tx");
+      if (trade.transactionHash) {
+        const txLink = document.createElement("a");
+        txLink.href = `https://polygonscan.com/tx/${encodeURIComponent(trade.transactionHash)}`;
+        txLink.target = "_blank";
+        txLink.rel = "noreferrer";
+        txLink.textContent = "View";
+        txLink.title = trade.transactionHash;
+        txEl.append(txLink);
+      } else {
+        txEl.textContent = "—";
+      }
+
+      row.title = "Click to inspect every API field";
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a, button")) return;
+        toggleTradeDetails(row, trade);
+      });
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleTradeDetails(row, trade);
+        }
+      });
       els.tradeRows.append(row);
     }
   }
@@ -630,7 +970,7 @@ function renderDetail() {
   els.detailVolume.textContent = fmtCompactUsd.format(number(builder.volume));
   els.detailUsers.textContent = fmtInt.format(number(builder.activeUsers));
   els.detailRangeLabel.textContent = detailRanges[state.detailRange].label;
-  renderVolumeBars();
+  renderTrendChart();
   renderTrades();
 }
 
@@ -659,6 +999,7 @@ async function loadBuilders({ reset = false } = {}) {
     state.selected = null;
     state.trades = [];
     state.nextCursor = null;
+    state.tradeMeta = { limit: 0, count: 0 };
     state.detailVolumes = [];
     state.hasMoreBuilders = true;
   }
@@ -683,29 +1024,32 @@ async function loadBuilders({ reset = false } = {}) {
     updateBuilderLoadStatus();
   }
   render();
-  loadVolumes(requestedPeriod).then(() => {
+  loadDailyVolumes().then(() => {
     if (requestedPeriod === state.period) renderDetail();
   });
 }
 
-async function loadVolumes(period = state.period) {
-  try {
-    const volumes = await api(`/api/builders/volume?timePeriod=${period}`);
-    if (period === state.period) state.volumes = volumes;
-  } catch (error) {
-    console.warn(error);
-    if (period === state.period) state.volumes = [];
-  }
+async function loadDailyVolumes({ force = false } = {}) {
+  if (state.volumes.length && !force) return state.volumes;
+  if (state.volumeLoading) return state.volumeLoading;
+  state.volumeLoading = api("/api/builders/volume?timePeriod=DAY")
+    .then((volumes) => {
+      state.volumes = Array.isArray(volumes) ? volumes : [];
+      return state.volumes;
+    })
+    .catch((error) => {
+      console.warn(error);
+      state.volumes = [];
+      return state.volumes;
+    })
+    .finally(() => {
+      state.volumeLoading = null;
+    });
+  return state.volumeLoading;
 }
 
 async function loadDetailVolumes() {
-  const period = detailRanges[state.detailRange].volumePeriod;
-  try {
-    state.detailVolumes = await api(`/api/builders/volume?timePeriod=${period}`);
-  } catch (error) {
-    console.warn(error);
-    state.detailVolumes = [];
-  }
+  state.detailVolumes = await loadDailyVolumes();
 }
 
 function unixFromDetailRange() {
@@ -717,28 +1061,83 @@ function unixFromDetailRange() {
   return String(Math.floor(date.getTime() / 1000));
 }
 
+async function loadMarketMetadata(trades) {
+  const missing = [...new Set(
+    trades
+      .map((trade) => trade.market)
+      .filter((conditionId) => conditionId && !state.marketMetadata.has(conditionId)),
+  )];
+  if (!missing.length) return;
+
+  const chunks = [];
+  for (let index = 0; index < missing.length; index += 40) chunks.push(missing.slice(index, index + 40));
+  await Promise.all(chunks.map(async (conditionIds) => {
+    const params = new URLSearchParams();
+    for (const conditionId of conditionIds) params.append("condition_ids", conditionId);
+    try {
+      const markets = await api(`/api/markets?${params}`);
+      const found = new Set();
+      for (const market of Array.isArray(markets) ? markets : []) {
+        if (!market.conditionId) continue;
+        found.add(market.conditionId);
+        state.marketMetadata.set(market.conditionId, {
+          question: market.question || "",
+          slug: market.slug || "",
+          eventSlug: market.events?.[0]?.slug || "",
+          icon: market.icon || market.image || "",
+        });
+      }
+      for (const conditionId of conditionIds) {
+        if (!found.has(conditionId)) state.marketMetadata.set(conditionId, null);
+      }
+    } catch (error) {
+      console.warn("Market metadata lookup failed", error);
+    }
+  }));
+}
+
 async function loadTrades({ append = false } = {}) {
   if (!state.selected?.builderCode) return;
+  const selectedCode = state.selected.builderCode;
   state.loading = true;
   els.loadNextTrades.disabled = true;
+  els.tradeError.classList.add("hidden");
+  els.tradeError.textContent = "";
   try {
-    const params = new URLSearchParams({ builder_code: state.selected.builderCode });
+    const params = new URLSearchParams({ builder_code: selectedCode });
     const after = unixFromDetailRange();
     if (after) params.set("after", after);
     if (append && state.nextCursor) params.set("next_cursor", state.nextCursor);
+    for (const [key, value] of Object.entries(state.tradeFilters)) {
+      if (value) params.set(key, value);
+    }
     const payload = await api(`/api/builder/trades?${params}`);
-    state.trades = append ? [...state.trades, ...(payload.data || [])] : payload.data || [];
+    if (state.selected?.builderCode !== selectedCode) return;
+    const nextRows = payload.data || [];
+    state.trades = append ? [...state.trades, ...nextRows] : nextRows;
     state.nextCursor = payload.next_cursor || null;
+    state.tradeMeta = {
+      limit: number(payload.limit),
+      count: number(payload.count),
+    };
+    renderTrades();
+    await loadMarketMetadata(nextRows);
+  } catch (error) {
+    if (state.selected?.builderCode === selectedCode) {
+      els.tradeError.textContent = error instanceof Error ? error.message : "Unable to load builder trades.";
+      els.tradeError.classList.remove("hidden");
+    }
   } finally {
     state.loading = false;
   }
-  renderTrades();
+  if (state.selected?.builderCode === selectedCode) renderTrades();
 }
 
 async function selectBuilder(builder) {
   state.selected = builder;
   state.trades = [];
   state.nextCursor = null;
+  state.tradeMeta = { limit: 0, count: 0 };
   render();
   await loadDetailVolumes();
   await loadTrades({ append: false });
@@ -781,6 +1180,8 @@ function downloadCsv() {
   const columns = [
     "id",
     "tradeType",
+    "takerOrderHash",
+    "builder",
     "builderCode",
     "market",
     "assetId",
@@ -790,13 +1191,28 @@ function downloadCsv() {
     "price",
     "status",
     "outcome",
+    "outcomeIndex",
     "owner",
     "maker",
     "transactionHash",
     "matchTime",
+    "bucketIndex",
+    "fee",
+    "feeUsdc",
+    "builderFee",
     "createdAt",
+    "updatedAt",
+    "marketTitle",
+    "marketUrl",
   ];
-  const rows = state.trades.map((trade) => columns.map((column) => csvValue(trade[column])).join(","));
+  const rows = state.trades.map((trade) => {
+    const metadata = state.marketMetadata.get(trade.market);
+    return columns.map((column) => {
+      if (column === "marketTitle") return csvValue(metadata?.question || "");
+      if (column === "marketUrl") return csvValue(marketUrl(metadata));
+      return csvValue(trade[column]);
+    }).join(",");
+  });
   download(`${state.selected?.builder || "builder"}-trades.csv`, [columns.join(","), ...rows].join("\n"), "text/csv");
 }
 
@@ -832,12 +1248,76 @@ document.querySelectorAll("[data-period]").forEach((button) => {
 
 els.searchInput.addEventListener("input", handleSearchInput);
 els.verifiedOnly.addEventListener("change", renderBuilders);
-els.refreshButton.addEventListener("click", () => loadBuilders({ reset: true }));
+els.refreshButton.addEventListener("click", async () => {
+  state.volumes = [];
+  const volumesPromise = loadDailyVolumes({ force: true });
+  await Promise.all([loadBuilders({ reset: true }), volumesPromise]);
+  state.detailVolumes = state.volumes;
+  render();
+});
 els.loadNextTrades.addEventListener("click", () => loadTrades({ append: true }));
 els.downloadJson.addEventListener("click", () => {
-  download(`${state.selected?.builder || "builder"}-trades.json`, JSON.stringify(state.trades, null, 2), "application/json");
+  const markets = Object.fromEntries(
+    [...new Set(state.trades.map((trade) => trade.market).filter(Boolean))]
+      .map((conditionId) => [conditionId, state.marketMetadata.get(conditionId) || null]),
+  );
+  download(`${state.selected?.builder || "builder"}-trades.json`, JSON.stringify({
+    builder: state.selected,
+    filters: state.tradeFilters,
+    limit: state.tradeMeta.limit,
+    count: state.tradeMeta.count,
+    next_cursor: state.nextCursor,
+    markets,
+    data: state.trades,
+  }, null, 2), "application/json");
 });
 els.downloadCsv.addEventListener("click", downloadCsv);
+
+function tradeFiltersFromInputs() {
+  return {
+    id: els.tradeIdFilter.value.trim(),
+    market: els.marketFilter.value.trim(),
+    asset_id: els.assetFilter.value.trim(),
+  };
+}
+
+function validateTradeFilters(filters) {
+  if (filters.market && !/^0x[a-fA-F0-9]{64}$/.test(filters.market)) {
+    return "Market condition ID must be a 32-byte 0x-prefixed hex value.";
+  }
+  if (filters.asset_id && !/^\d+$/.test(filters.asset_id)) {
+    return "Asset token ID must contain digits only.";
+  }
+  return "";
+}
+
+els.applyTradeFilters.addEventListener("click", async () => {
+  const filters = tradeFiltersFromInputs();
+  const error = validateTradeFilters(filters);
+  if (error) {
+    els.tradeError.textContent = error;
+    els.tradeError.classList.remove("hidden");
+    return;
+  }
+  state.tradeFilters = filters;
+  state.trades = [];
+  state.nextCursor = null;
+  state.tradeMeta = { limit: 0, count: 0 };
+  renderTrades();
+  await loadTrades();
+});
+
+els.clearTradeFilters.addEventListener("click", async () => {
+  els.tradeIdFilter.value = "";
+  els.marketFilter.value = "";
+  els.assetFilter.value = "";
+  state.tradeFilters = { id: "", market: "", asset_id: "" };
+  state.trades = [];
+  state.nextCursor = null;
+  state.tradeMeta = { limit: 0, count: 0 };
+  renderTrades();
+  await loadTrades();
+});
 
 document.querySelectorAll("[data-detail-range]").forEach((button) => {
   button.addEventListener("click", async () => {
@@ -847,6 +1327,7 @@ document.querySelectorAll("[data-detail-range]").forEach((button) => {
     state.detailRange = button.dataset.detailRange;
     state.trades = [];
     state.nextCursor = null;
+    state.tradeMeta = { limit: 0, count: 0 };
     renderDetail();
     if (!state.selected) return;
     await loadDetailVolumes();
@@ -855,9 +1336,20 @@ document.querySelectorAll("[data-detail-range]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-trend-metric]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("[data-trend-metric]").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    state.trendMetric = button.dataset.trendMetric;
+    renderTrendChart();
+  });
+});
+
 // Table sorting header click events
 document.querySelectorAll("th.sortable").forEach((th) => {
-  th.addEventListener("click", () => {
+  th.tabIndex = 0;
+  th.setAttribute("role", "button");
+  const sort = () => {
     const col = th.dataset.sort;
     if (state.sortColumn === col) {
       state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
@@ -866,6 +1358,13 @@ document.querySelectorAll("th.sortable").forEach((th) => {
       state.sortDirection = (col === "volume" || col === "users") ? "desc" : "asc";
     }
     renderBuilders();
+  };
+  th.addEventListener("click", sort);
+  th.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      sort();
+    }
   });
 });
 
@@ -894,6 +1393,10 @@ if (els.copyCodeButton) {
 if (els.accordionHeader) {
   els.accordionHeader.addEventListener("click", () => {
     els.accordionHeader.classList.toggle("active");
+    els.accordionHeader.setAttribute(
+      "aria-expanded",
+      String(els.accordionHeader.classList.contains("active")),
+    );
     const content = els.accordionContent;
     if (content.style.maxHeight && content.style.maxHeight !== "0px") {
       content.style.maxHeight = "0px";
@@ -932,6 +1435,13 @@ loadBuilders({ reset: true }).then(() => {
   // Recalculate indicators after layout settles
   setTimeout(updateSegmentedIndicator, 100);
 }).catch((error) => {
-  els.builderRows.innerHTML = `<tr><td colspan="5">Failed to load data: ${error.message}</td></tr>`;
+  els.builderRows.innerHTML = "";
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
+  cell.colSpan = 5;
+  cell.setAttribute("role", "alert");
+  cell.textContent = `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`;
+  row.append(cell);
+  els.builderRows.append(row);
   console.error(error);
 });
