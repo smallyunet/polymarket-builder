@@ -586,7 +586,7 @@ body.virae-tracker-active main {
 }
 
 body.detail-selected .virae-tracker {
-  display: none;
+  z-index: 1100;
 }
 
 .mobile-primary-nav {
@@ -2023,6 +2023,13 @@ tbody tr:nth-child(3) .rank-cell {
     display: none;
   }
 
+  body.detail-selected .virae-tracker,
+  body.detail-selected[data-mobile-view="market"] .virae-tracker {
+    display: block;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 1100;
+  }
+
   .virae-tracker-main {
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 10px;
@@ -2308,6 +2315,10 @@ tbody tr:nth-child(3) .rank-cell {
     flex-direction: column;
     transform: translateX(100%);
     animation: slideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  body.detail-selected #detailContent {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom));
   }
   
   @keyframes slideIn {

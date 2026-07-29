@@ -1714,6 +1714,16 @@ if (els.backToListButton) {
 els.viraeTrackerButton.addEventListener("click", () => {
   const tracked = trackedBuilder();
   if (!tracked) return;
+
+  if (isMobileLayout() && state.selected) {
+    state.selected = null;
+    state.trades = [];
+    state.nextCursor = null;
+    state.tradeMeta = { limit: 0, count: 0 };
+    state.mobileView = "leaderboard";
+    render();
+  }
+
   const row = els.builderRows.querySelector(`tr[data-code="${CSS.escape(tracked.builderCode)}"]`);
   if (!row) return;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
