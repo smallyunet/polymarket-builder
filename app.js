@@ -38,7 +38,6 @@ const els = {
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
   minUsers: document.querySelector("#minUsers"),
-  verifiedOnly: document.querySelector("#verifiedOnly"),
   refreshButton: document.querySelector("#refreshButton"),
   loadMoreBuilders: document.querySelector("#loadMoreBuilders"),
   
@@ -314,7 +313,6 @@ function builderMatchesSearch(builder, query = searchQuery()) {
 function visibleBuilders() {
   const userThreshold = minimumUsers();
   return state.builders.filter((builder) => {
-    if (els.verifiedOnly.checked && !builder.verified) return false;
     if (number(builder.activeUsers) < userThreshold) return false;
     return true;
   });
@@ -1634,7 +1632,6 @@ els.minUsers.addEventListener("blur", () => {
   els.minUsers.value = String(minimumUsers());
   renderBuilders();
 });
-els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", async () => {
   state.volumes = [];
   const volumesPromise = loadDailyVolumes({ force: true });
