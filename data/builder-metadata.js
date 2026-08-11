@@ -7,7 +7,7 @@
 export const TRACKED_BUILDER_CODE = "0xcb5f0c1b63c47ad9193a5d1a95a2055076eec604be4abb019025dd0e3554a7cc";
 
 const VERIFIED_AT = "2026-07-29";
-const REFRESHED_AT = "2026-08-07";
+const REFRESHED_AT = "2026-08-11";
 const profiles = [
   ["0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1","betmoar","betmoar",{"website":"https://betmoar.fun/","x":"https://x.com/betmoardotfun","discord":"https://discord.com/invite/betmoar"},REFRESHED_AT],
   ["0x2c6624a23b16a2a69acd14c87b7fc03906870c851fa0a7b7f9d7be0fbbedea8a","Gate","gate",{"website":"https://www.gate.com/","x":"https://x.com/gate_io"}],
@@ -156,6 +156,23 @@ const profiles = [
   ["0xc198bd7653e6f97c229473118ed6b1aa0b2184ad3faafcbcf4ddadbd5e5517ee","ChimpX","https://polymart.app/chimpx-ai",{"website":"https://app.chimpx.ai/","x":"https://x.com/ChimpxAI","telegram":"https://t.me/ChimpXofficial"},REFRESHED_AT],
   ["0x5472fdd700a9b2b6613d103095048c92304e97215a2607f73a9d5aa3701f3f09","polynode","https://polymart.app/polynode",{"website":"https://polynode.dev/","x":"https://x.com/joinPolynode"},REFRESHED_AT],
   ["0x44cd41c8e0938828f288417db30ef1dbab12f3c5045d93dd2a24d75d439a32a2","Rumor","https://polymart.app/rumor-trade",{"website":"https://www.rumor.trade/","x":"https://x.com/tryrumor","telegram":"https://t.me/tryrumor","discord":"https://discord.gg/qdamV5yxKR"},REFRESHED_AT],
+
+  // Additional current-leaderboard projects verified against project-controlled pages.
+  ["0x7880aec93413f117ef14bd4e6d130875ab2c7d7d55a064fac3c2f7bd51516380","PolyBot","https://docs.polybot.trading/docs/what-is-polybot/",{"website":"https://polybot.trading/","x":"https://x.com/TradePolyBot"},REFRESHED_AT],
+  ["0x52f1a9b320cab38e5da8a8f97989383aab0a49165fc91c737310e4f7e9821021","fireplace","https://docs.fireplace.gg/",{"website":"https://fireplace.gg/"},REFRESHED_AT],
+  ["0xcc01476ef4ccfe0b8c56ede9b6f98c532617853ec41827dbe78a277650ea26d0","Polystreet","https://www.polystreet.ai/",{"website":"https://www.polystreet.ai/","x":"https://x.com/Polystreetdotai"},REFRESHED_AT],
+  ["0x3072552baf39f0505a8401d098c760a8cb30222e2886b7a4397f30406391c748","Metazen","https://metazenpulse.com/",{"website":"https://metazenpulse.com/","x":"https://x.com/metazen_mtz"},REFRESHED_AT],
+  ["0x414541972d39be9015c42e0ade97311a8864049dc6fd8be0d6dfba0900351227","ChartHackers","https://charthackers.com/",{"website":"https://charthackers.com/"},REFRESHED_AT],
+  ["0x4b5741b66dfc3ddda0498bb439a89483ed0d58bc0103b14be6f47fbf0ef9ff8a","agg.market","https://build.agg.market/",{"website":"https://agg.market/","x":"https://x.com/Agg_Market"},REFRESHED_AT],
+  ["0x06e115b53c3710296e968de43972341441c33e0f127fe8c3dbecb2043f159c1a","Polyfollow","https://www.polyfollow.com/",{"website":"https://www.polyfollow.com/","x":"https://x.com/polyfollowcom"},REFRESHED_AT],
+  ["0x4abc806c5ea95d61010adcc98efa42fa743f0f2fc4afa2d2b0ac67132d024338","Grand Labs","https://www.linkedin.com/posts/itsgrandapp_the-news-cycle-is-now-a-tradable-asset-activity-7450203783726465024-bJMF",{"website":"https://itsgrand.app/"},REFRESHED_AT],
+  ["0x18fc17ee71e267387694d721f09ccb2517cb2092acee07449dc896b58367dbb5","FlowBot","https://flowbot.pro/",{"website":"https://flowbot.pro/","x":"https://x.com/Flowbot_pro"},REFRESHED_AT],
+  ["0x9bbe9aa6257b0e4ff355d037e3f018b72789ae765b92c5a681c7afea303b9a7c","Blackboard.fi","https://blackboard.fi/",{"website":"https://blackboard.fi/","x":"https://x.com/blackboardhq"},REFRESHED_AT],
+  ["0x69c6ea37cb762fbdeb98eff8b8156b5bdb1139571d8f7d88a6539d0b9e3ec9e9","Polybuk.ai","https://www.polybuk.ai/terminos",{"website":"https://www.polybuk.ai/"},REFRESHED_AT],
+  ["0xd7fc5e8be976a4444ced8ad98aa0c3a6f125ed920ac01577df6793ff8ca52eaf","tryOdds.fun","https://tryodds.fun/",{"website":"https://tryodds.fun/","x":"https://x.com/tryoddsfun"},REFRESHED_AT],
+  ["0xf2a46036a516f74ab47b1dcabe53e69a5491d59fea4e859ce6e1f3013a2813ef","Odyssey Finance","https://odyssey.finance/",{"website":"https://odyssey.finance/","x":"https://x.com/OdysseyFi"},REFRESHED_AT],
+  ["0xc8203cecc9316ea33435fc5ef6ff3a962aa0ff9a419ff30991ed492fdb9e1ce1","Questflow.ai","https://blog.questflow.ai/p/your-ai-trading-assistant-just-learned",{"website":"https://questflow.ai/","x":"https://x.com/questflow"},REFRESHED_AT],
+  ["0xaf151bb337c41f3f911a8e4e63aeca37287731e29c877190f82954c5eabd84f0","ELLIPAL","https://www.ellipal.com/blogs/news/ellipal-prediction-market",{"website":"https://www.ellipal.com/","x":"https://x.com/ellipal"},REFRESHED_AT],
 ];
 
 export const BUILDER_METADATA = Object.freeze(Object.fromEntries(
