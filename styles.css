@@ -438,6 +438,52 @@ main {
   color: var(--blue-hover);
 }
 
+/* Compact inclusive threshold filter */
+.number-filter {
+  min-height: 42px;
+  padding: 4px 5px 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.number-filter:focus-within {
+  border-color: var(--blue);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+.number-filter input {
+  width: 76px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.number-filter input:focus-visible {
+  outline: none;
+}
+
+.number-filter input:invalid {
+  border-color: var(--red);
+}
+
+.number-filter input::placeholder {
+  color: var(--ink-faint);
+}
+
 /* Toggle Switch */
 .toggle {
   display: flex;
@@ -2445,11 +2491,22 @@ tbody tr:nth-child(3) .rank-cell {
   }
 
   .toggle,
+  .number-filter,
   .btn,
   .trade-filters summary,
   .range-tabs button,
   .filter-grid input {
     min-height: 44px;
+  }
+
+  .number-filter {
+    justify-content: space-between;
+  }
+
+  .number-filter input {
+    width: 120px;
+    height: 34px;
+    font-size: 16px;
   }
 
   .filter-grid input {

@@ -37,6 +37,7 @@ const els = {
   builderRows: document.querySelector("#builderRows"),
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
+  minUsers: document.querySelector("#minUsers"),
   verifiedOnly: document.querySelector("#verifiedOnly"),
   refreshButton: document.querySelector("#refreshButton"),
   loadMoreBuilders: document.querySelector("#loadMoreBuilders"),
@@ -282,6 +283,12 @@ function searchQuery() {
   return els.searchInput.value.trim().toLowerCase();
 }
 
+function minimumUsers() {
+  if (!els.minUsers.value) return 0;
+  const value = els.minUsers.valueAsNumber;
+  return Number.isFinite(value) ? Math.max(0, Math.ceil(value)) : 0;
+}
+
 function isTrackedBuilder(builder) {
   return (
     builder?.builderCode?.toLowerCase() === TRACKED_BUILDER_CODE ||
@@ -305,8 +312,10 @@ function builderMatchesSearch(builder, query = searchQuery()) {
 }
 
 function visibleBuilders() {
+  const userThreshold = minimumUsers();
   return state.builders.filter((builder) => {
     if (els.verifiedOnly.checked && !builder.verified) return false;
+    if (number(builder.activeUsers) < userThreshold) return false;
     return true;
   });
 }
@@ -1619,6 +1628,12 @@ document.querySelectorAll("[data-period]").forEach((button) => {
 });
 
 els.searchInput.addEventListener("input", handleSearchInput);
+els.minUsers.addEventListener("input", renderBuilders);
+els.minUsers.addEventListener("blur", () => {
+  if (!els.minUsers.value) return;
+  els.minUsers.value = String(minimumUsers());
+  renderBuilders();
+});
 els.verifiedOnly.addEventListener("change", renderBuilders);
 els.refreshButton.addEventListener("click", async () => {
   state.volumes = [];
