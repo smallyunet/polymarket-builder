@@ -28,6 +28,7 @@ const state = {
   trackedBuilderStatus: "loading",
   trackedBuilderPromise: null,
   trackedJumpUntil: 0,
+  detailsEnabled: true,
   mobileView: document.body.dataset.mobileView === "market" ? "market" : "leaderboard",
   mobileScrollPositions: { leaderboard: 0, market: 0 },
 };
@@ -40,6 +41,7 @@ const els = {
   rowTemplate: document.querySelector("#builderRowTemplate"),
   searchInput: document.querySelector("#searchInput"),
   minUsers: document.querySelector("#minUsers"),
+  detailsToggle: document.querySelector("#detailsToggle"),
   refreshButton: document.querySelector("#refreshButton"),
   loadMoreBuilders: document.querySelector("#loadMoreBuilders"),
   
@@ -426,7 +428,8 @@ function renderBuilders() {
     const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
     row.dataset.code = builder.builderCode;
     row.dataset.rank = String(builder.rank || "");
-    row.tabIndex = 0;
+    row.tabIndex = state.detailsEnabled ? 0 : -1;
+    row.classList.toggle("noninteractive", !state.detailsEnabled);
     if (state.selected?.builderCode === builder.builderCode) row.classList.add("active");
     if (builderMatchesSearch(builder, query)) row.classList.add("search-match");
     if (isTrackedBuilder(builder)) {
@@ -471,14 +474,16 @@ function renderBuilders() {
     const fee = state.builderFees.get(builder.builderCode?.toLowerCase());
     renderBuilderFee(feeValues, fee);
     setAvatar(row.querySelector(".avatar"), builder);
-    row.addEventListener("click", () => selectBuilder(builder));
-    row.addEventListener("keydown", (event) => {
-      if (event.target.closest("a, button")) return;
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        selectBuilder(builder);
-      }
-    });
+    if (state.detailsEnabled) {
+      row.addEventListener("click", () => selectBuilder(builder));
+      row.addEventListener("keydown", (event) => {
+        if (event.target.closest("a, button")) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectBuilder(builder);
+        }
+      });
+    }
     els.builderRows.append(row);
     observeBuilderFee(row);
   }
@@ -1119,6 +1124,13 @@ function renderTrades() {
 }
 
 function renderDetail() {
+  if (!state.detailsEnabled) {
+    els.emptyDetail.classList.remove("hidden");
+    els.detailContent.classList.add("hidden");
+    document.body.classList.remove("detail-selected");
+    return;
+  }
+
   if (!state.selected) {
     els.emptyDetail.classList.remove("hidden");
     els.detailContent.classList.add("hidden");
@@ -1277,7 +1289,21 @@ function renderViraeTracker() {
   scheduleViraeTrackerUpdate();
 }
 
+function renderDetailsMode() {
+  const enabled = state.detailsEnabled;
+  document.body.classList.toggle("details-disabled", !enabled);
+  els.detailsToggle.setAttribute("aria-checked", String(enabled));
+  els.detailsToggle.title = enabled
+    ? "Hide the builder detail panel"
+    : "Show the builder detail panel";
+  els.marketVolumePanel.hidden = !enabled;
+
+  const marketTab = els.mobileViewTabs.find((tab) => tab.dataset.mobileView === "market");
+  if (marketTab) marketTab.disabled = !enabled;
+}
+
 function render() {
+  renderDetailsMode();
   renderBuilders();
   renderDetail();
   renderViraeTracker();
@@ -1562,6 +1588,7 @@ async function loadTrades({ append = false } = {}) {
 }
 
 async function selectBuilder(builder) {
+  if (!state.detailsEnabled) return;
   state.selected = builder;
   state.trades = [];
   state.nextCursor = null;
@@ -1576,6 +1603,12 @@ async function handleSearchInput() {
   const match = firstSearchMatch();
   if (!match) {
     renderBuilders();
+    return;
+  }
+
+  if (!state.detailsEnabled) {
+    renderBuilders();
+    scrollBuilderRowIntoView(match.builderCode);
     return;
   }
 
@@ -1669,6 +1702,7 @@ function isMobileLayout() {
 
 function renderMobileNavigation() {
   const mobile = isMobileLayout();
+  if (!state.detailsEnabled) state.mobileView = "leaderboard";
   const activeView = state.mobileView;
   document.body.dataset.mobileView = activeView;
 
@@ -1684,6 +1718,10 @@ function renderMobileNavigation() {
     [els.marketVolumePanel, "marketVolumeTab", "market"],
   ];
   for (const [panel, labelledBy, view] of panels) {
+    if (view === "market" && !state.detailsEnabled) {
+      panel.setAttribute("aria-hidden", "true");
+      continue;
+    }
     if (mobile) {
       panel.setAttribute("role", "tabpanel");
       panel.setAttribute("aria-labelledby", labelledBy);
@@ -1703,6 +1741,7 @@ function renderMobileNavigation() {
 
 function setMobileView(view, { restoreScroll = true } = {}) {
   if (!["leaderboard", "market"].includes(view)) return;
+  if (view === "market" && !state.detailsEnabled) return;
 
   if (view === state.mobileView) {
     renderMobileNavigation();
@@ -1753,6 +1792,17 @@ els.minUsers.addEventListener("blur", () => {
   if (!els.minUsers.value) return;
   els.minUsers.value = String(minimumUsers());
   renderBuilders();
+});
+els.detailsToggle.addEventListener("click", () => {
+  state.detailsEnabled = !state.detailsEnabled;
+  if (!state.detailsEnabled) {
+    state.selected = null;
+    state.trades = [];
+    state.nextCursor = null;
+    state.tradeMeta = { limit: 0, count: 0 };
+    state.mobileView = "leaderboard";
+  }
+  render();
 });
 els.refreshButton.addEventListener("click", async () => {
   state.volumes = [];
@@ -1954,6 +2004,7 @@ els.viraeTrackerButton.addEventListener("click", () => {
 // Initial Loading & Visual Setup
 applyCuratedNavigation();
 updateSegmentedIndicator();
+renderDetailsMode();
 renderMobileNavigation();
 window.addEventListener("resize", () => {
   updateSegmentedIndicator();
