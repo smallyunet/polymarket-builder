@@ -1103,7 +1103,12 @@ tbody tr:nth-child(3) .rank-cell {
 
 .fee-cell {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
+}
+
+.leaderboard-shell th.fee-header {
+  font-size: 10px;
+  letter-spacing: 0.06em;
 }
 
 .fee-values {
@@ -1122,14 +1127,14 @@ tbody tr:nth-child(3) .rank-cell {
 
 .fee-values small {
   color: var(--ink-faint);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
 
 .fee-values strong {
   color: var(--ink);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 650;
 }
 
