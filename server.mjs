@@ -85,6 +85,19 @@ async function handleApi(req, res, requestUrl) {
     return;
   }
 
+  if (requestUrl.pathname === "/api/builder/fees") {
+    const builderCode = requestUrl.searchParams.get("builder_code") || "";
+    if (!/^0x[a-fA-F0-9]{64}$/.test(builderCode)) {
+      sendJson(res, 400, { error: "builder_code must be a 32-byte hex value" });
+      return;
+    }
+    const upstream = new URL(
+      `https://clob.polymarket.com/fees/builder-fees/${builderCode}`,
+    );
+    await proxyJson(res, upstream);
+    return;
+  }
+
   if (requestUrl.pathname === "/api/markets") {
     const conditionIds = requestUrl.searchParams
       .getAll("condition_ids")

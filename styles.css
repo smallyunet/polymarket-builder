@@ -840,7 +840,7 @@ table {
 }
 
 .leaderboard-table .project-column {
-  width: 33%;
+  width: 31%;
 }
 
 .leaderboard-table .volume-column {
@@ -848,15 +848,15 @@ table {
 }
 
 .leaderboard-table .users-column {
-  width: 12%;
+  width: 11%;
 }
 
 .leaderboard-table .website-column {
   width: 17%;
 }
 
-.leaderboard-table .code-column {
-  width: 12%;
+.leaderboard-table .fee-column {
+  width: 15%;
 }
 
 .leaderboard-table th,
@@ -1101,12 +1101,47 @@ tbody tr:nth-child(3) .rank-cell {
   font-size: 11px;
 }
 
-.code-value {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.fee-cell {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.fee-values {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   white-space: nowrap;
+}
+
+.fee-values > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fee-values small {
+  color: var(--ink-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.fee-values strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.fee-values[data-state="idle"] strong,
+.fee-values[data-state="loading"] strong,
+.fee-values[data-state="unavailable"] strong {
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.fee-values[data-state="disabled"] strong {
+  color: var(--ink-muted);
 }
 
 /* Detail Sidebar */
@@ -1226,9 +1261,22 @@ tbody tr:nth-child(3) .rank-cell {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.detail-code-label {
+  flex: 0 0 auto;
+  color: var(--ink-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .detail-code-row .code-cell {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  white-space: nowrap;
   color: var(--ink-muted);
   background: rgba(0, 0, 0, 0.2);
   padding: 2px 8px;
@@ -2392,10 +2440,10 @@ tbody tr:nth-child(3) .rank-cell {
     min-height: 44px;
   }
   
-  /* Hide builder code column on mobile to fit table nicely */
-  .code-header,
-  td.code-cell,
-  .code-column {
+  /* Keep fee detail in the selected-builder panel on narrow layouts. */
+  .fee-header,
+  td.fee-cell,
+  .fee-column {
     display: none !important;
   }
 

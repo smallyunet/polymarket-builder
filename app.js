@@ -8,6 +8,8 @@ const state = {
   detailRange: "30d",
   trendMetric: "volume",
   builders: [],
+  builderFees: new Map(),
+  builderFeeGeneration: 0,
   volumes: [],
   detailVolumes: [],
   nextOffset: 0,
@@ -54,9 +56,6 @@ const els = {
   detailTradeValue: document.querySelector("#detailTradeValue"),
   detailFees: document.querySelector("#detailFees"),
   detailBuilderFees: document.querySelector("#detailBuilderFees"),
-  detailOwners: document.querySelector("#detailOwners"),
-  detailTradeMix: document.querySelector("#detailTradeMix"),
-  detailStatus: document.querySelector("#detailStatus"),
   detailRangeLabel: document.querySelector("#detailRangeLabel"),
   rawTrades: document.querySelector("#rawTrades"),
   cursorState: document.querySelector("#cursorState"),
@@ -115,6 +114,7 @@ const fmtCompactUsd = new Intl.NumberFormat("en-US", {
 
 const fmtInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const fmtDecimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
+const fmtFeePercent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtPreciseUsd = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -169,6 +169,11 @@ function number(value) {
 function shortCode(code) {
   if (!code) return "Legacy / empty";
   return `${code.slice(0, 10)}...${code.slice(-8)}`;
+}
+
+function formatFeeRate(bps) {
+  const percent = number(bps) / 100;
+  return `${fmtFeePercent.format(percent)}%`;
 }
 
 function escapeHtml(value) {
@@ -261,6 +266,10 @@ function apiUrl(path) {
   }
   if (url.pathname === "/api/builder/trades") {
     return `https://clob.polymarket.com/builder/trades${url.search}`;
+  }
+  if (url.pathname === "/api/builder/fees") {
+    const builderCode = url.searchParams.get("builder_code") || "";
+    return `https://clob.polymarket.com/fees/builder-fees/${encodeURIComponent(builderCode)}`;
   }
   if (url.pathname === "/api/markets") {
     return `https://gamma-api.polymarket.com/markets${url.search}`;
@@ -357,7 +366,47 @@ function scrollBuilderRowIntoView(builderCode) {
   row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
+function renderBuilderFee(feeValues, fee) {
+  const makerFee = feeValues.querySelector(".maker-fee-value");
+  const takerFee = feeValues.querySelector(".taker-fee-value");
+  if (fee?.status === "ready" && fee.enabled) {
+    const makerLabel = formatFeeRate(fee.makerBps);
+    const takerLabel = formatFeeRate(fee.takerBps);
+    makerFee.textContent = makerLabel;
+    takerFee.textContent = takerLabel;
+    feeValues.dataset.state = "ready";
+    feeValues.title = `Current builder fees: maker ${makerLabel}, taker ${takerLabel}`;
+    feeValues.setAttribute(
+      "aria-label",
+      `Current builder fee rates: maker ${makerLabel}, taker ${takerLabel}`,
+    );
+    feeValues.removeAttribute("aria-busy");
+  } else if (fee?.status === "ready") {
+    makerFee.textContent = "Off";
+    takerFee.textContent = "Off";
+    feeValues.dataset.state = "disabled";
+    feeValues.title = "Builder fee charging is disabled";
+    feeValues.setAttribute("aria-label", "Builder fee charging is disabled");
+    feeValues.removeAttribute("aria-busy");
+  } else {
+    const unavailable = fee?.status === "unavailable";
+    const loading = fee?.status === "loading";
+    makerFee.textContent = unavailable ? "—" : "…";
+    takerFee.textContent = unavailable ? "—" : "…";
+    feeValues.dataset.state = unavailable ? "unavailable" : loading ? "loading" : "idle";
+    feeValues.title = unavailable
+      ? "Builder fee rates unavailable"
+      : loading
+        ? "Loading current builder fee rates"
+        : "Fee rates load when this row nears the viewport";
+    feeValues.setAttribute("aria-label", feeValues.title);
+    if (unavailable) feeValues.removeAttribute("aria-busy");
+    else feeValues.setAttribute("aria-busy", "true");
+  }
+}
+
 function renderBuilders() {
+  builderFeeObserver?.disconnect();
   els.builderRows.innerHTML = "";
   
   // Update header classes to show sorting arrows
@@ -418,9 +467,9 @@ function renderBuilders() {
     
     row.querySelector(".volume-cell").textContent = fmtCompactUsd.format(number(builder.volume));
     row.querySelector(".users-cell").textContent = fmtInt.format(number(builder.activeUsers));
-    const codeValue = row.querySelector(".code-value");
-    codeValue.textContent = shortCode(builder.builderCode);
-    codeValue.title = builder.builderCode || "Legacy / empty builder code";
+    const feeValues = row.querySelector(".fee-values");
+    const fee = state.builderFees.get(builder.builderCode?.toLowerCase());
+    renderBuilderFee(feeValues, fee);
     setAvatar(row.querySelector(".avatar"), builder);
     row.addEventListener("click", () => selectBuilder(builder));
     row.addEventListener("keydown", (event) => {
@@ -431,6 +480,7 @@ function renderBuilders() {
       }
     });
     els.builderRows.append(row);
+    observeBuilderFee(row);
   }
 
   if (!rows.length) {
@@ -884,18 +934,11 @@ function marketUrl(metadata) {
 function renderTradeStats() {
   const trades = state.trades;
   const sum = (field) => trades.reduce((total, trade) => total + number(trade[field]), 0);
-  const owners = new Set(trades.map((trade) => trade.owner).filter(Boolean));
-  const makers = trades.filter((trade) => String(trade.tradeType).toUpperCase() === "MAKER").length;
-  const takers = trades.filter((trade) => String(trade.tradeType).toUpperCase() === "TAKER").length;
-  const settled = trades.filter((trade) => ["CONFIRMED", "MINED"].includes(normalizedStatus(trade.status))).length;
 
   els.detailTradeCount.textContent = fmtInt.format(trades.length);
   els.detailTradeValue.textContent = fmtCompactUsd.format(sum("sizeUsdc"));
   els.detailFees.textContent = fmtPreciseUsd.format(sum("feeUsdc"));
   els.detailBuilderFees.textContent = fmtPreciseUsd.format(sum("builderFee"));
-  els.detailOwners.textContent = fmtInt.format(owners.size);
-  els.detailTradeMix.textContent = trades.length ? `${fmtInt.format(makers)} / ${fmtInt.format(takers)}` : "—";
-  els.detailStatus.textContent = trades.length ? `${Math.round((settled / trades.length) * 100)}%` : "—";
 }
 
 function appendDetailValue(container, label, value, href = "") {
@@ -1251,12 +1294,91 @@ function updateBuilderLoadStatus() {
   }
 }
 
+let builderFeeRenderFrame = 0;
+const BUILDER_FEE_CONCURRENCY = 4;
+let builderFeeQueue = [];
+let activeBuilderFeeRequests = 0;
+
+const builderFeeObserver = typeof IntersectionObserver === "function"
+  ? new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        builderFeeObserver.unobserve(entry.target);
+        enqueueBuilderFee(entry.target.dataset.code);
+      }
+    }, { rootMargin: "480px 0px" })
+  : null;
+
+function scheduleBuilderFeeRender() {
+  if (builderFeeRenderFrame) return;
+  builderFeeRenderFrame = requestAnimationFrame(() => {
+    builderFeeRenderFrame = 0;
+    for (const row of els.builderRows.querySelectorAll("tr[data-code]")) {
+      const feeValues = row.querySelector(".fee-values");
+      if (!feeValues) continue;
+      renderBuilderFee(feeValues, state.builderFees.get(row.dataset.code?.toLowerCase()));
+    }
+  });
+}
+
+function observeBuilderFee(row) {
+  const code = row.dataset.code?.toLowerCase();
+  if (!/^0x[a-f0-9]{64}$/.test(code || "") || state.builderFees.has(code)) return;
+  if (builderFeeObserver) builderFeeObserver.observe(row);
+  else enqueueBuilderFee(code);
+}
+
+function enqueueBuilderFee(rawCode) {
+  const code = rawCode?.toLowerCase();
+  if (!/^0x[a-f0-9]{64}$/.test(code || "") || state.builderFees.has(code)) return;
+  state.builderFees.set(code, { status: "loading" });
+  builderFeeQueue.push({ code, generation: state.builderFeeGeneration });
+  scheduleBuilderFeeRender();
+  drainBuilderFeeQueue();
+}
+
+function drainBuilderFeeQueue() {
+  while (activeBuilderFeeRequests < BUILDER_FEE_CONCURRENCY && builderFeeQueue.length) {
+    const job = builderFeeQueue.shift();
+    if (job.generation !== state.builderFeeGeneration) continue;
+    activeBuilderFeeRequests += 1;
+    void requestBuilderFee(job);
+  }
+}
+
+async function requestBuilderFee({ code, generation }) {
+  try {
+    const payload = await api(`/api/builder/fees?builder_code=${encodeURIComponent(code)}`);
+    if (generation !== state.builderFeeGeneration) return;
+    state.builderFees.set(code, {
+      status: "ready",
+      enabled: Boolean(payload?.enabled),
+      makerBps: number(payload?.builder_maker_fee_rate_bps),
+      takerBps: number(payload?.builder_taker_fee_rate_bps),
+    });
+  } catch (error) {
+    if (generation !== state.builderFeeGeneration) return;
+    state.builderFees.set(code, { status: "unavailable" });
+    console.warn(`Builder fee lookup failed for ${shortCode(code)}`, error);
+  } finally {
+    activeBuilderFeeRequests -= 1;
+    if (generation === state.builderFeeGeneration) {
+      scheduleBuilderFeeRender();
+    }
+    drainBuilderFeeQueue();
+  }
+}
+
 async function loadBuilders({ reset = false } = {}) {
   if (state.isLoadingBuilders) return;
   if (!reset && !state.hasMoreBuilders) return;
 
   if (reset) {
+    builderFeeObserver?.disconnect();
+    builderFeeQueue = [];
     state.builders = [];
+    state.builderFees = new Map();
+    state.builderFeeGeneration += 1;
     state.nextOffset = 0;
     state.selected = null;
     state.trades = [];

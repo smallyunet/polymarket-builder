@@ -64,6 +64,7 @@ browser calls Polymarket public APIs directly.
 - `GET https://data-api.polymarket.com/v1/builders/leaderboard`
 - `GET https://data-api.polymarket.com/v1/builders/volume`
 - `GET https://clob.polymarket.com/builder/trades`
+- `GET https://clob.polymarket.com/fees/builder-fees/{builderCode}`
 - `GET https://gamma-api.polymarket.com/markets?condition_ids=...` for
   human-readable market titles and links.
 

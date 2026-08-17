@@ -80,7 +80,7 @@
                 <col class="volume-column" />
                 <col class="users-column" />
                 <col class="website-column" />
-                <col class="code-column" />
+                <col class="fee-column" />
               </colgroup>
               <thead>
                 <tr>
@@ -89,7 +89,7 @@
                   <th class="sortable" data-sort="volume" style="text-align: right;">Volume</th>
                   <th class="sortable users-header" data-sort="users" style="text-align: right;">Users</th>
                   <th class="website-header">Website</th>
-                  <th class="code-header">Builder Code</th>
+                  <th class="fee-header">Maker / Taker Fee</th>
                 </tr>
               </thead>
               <tbody id="builderRows"></tbody>
@@ -150,6 +150,7 @@
                   </a>
                 </div>
                 <div class="detail-code-row">
+                  <span class="detail-code-label">Builder Code</span>
                   <span id="detailCode" class="code-cell"></span>
                   <button id="copyCodeButton" class="copy-btn" title="Copy Builder Code" aria-label="Copy Builder Code">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -182,18 +183,6 @@
               <article>
                 <span>Builder Fees</span>
                 <strong id="detailBuilderFees">$0</strong>
-              </article>
-              <article>
-                <span>Unique Owners</span>
-                <strong id="detailOwners">0</strong>
-              </article>
-              <article>
-                <span>Maker / Taker</span>
-                <strong id="detailTradeMix">—</strong>
-              </article>
-              <article>
-                <span>Confirmed / Mined</span>
-                <strong id="detailStatus">—</strong>
               </article>
             </div>
 
@@ -399,7 +388,12 @@
           </a>
           <span class="website-empty">—</span>
         </td>
-        <td class="code-cell"><span class="code-value"></span></td>
+        <td class="fee-cell">
+          <div class="fee-values" aria-label="Builder maker and taker fee rates">
+            <span><small>M</small><strong class="maker-fee-value">—</strong></span>
+            <span><small>T</small><strong class="taker-fee-value">—</strong></span>
+          </div>
+        </td>
       </tr>
     </template>
 
@@ -421,6 +415,6 @@
       </tr>
     </template>
 
-    <script src="./app.js?v=20260811-2" type="module"></script>
+    <script src="./app.js?v=20260817-1" type="module"></script>
   </body>
 </html>
