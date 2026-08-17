@@ -7,7 +7,7 @@
 export const TRACKED_BUILDER_CODE = "0xcb5f0c1b63c47ad9193a5d1a95a2055076eec604be4abb019025dd0e3554a7cc";
 
 const VERIFIED_AT = "2026-07-29";
-const REFRESHED_AT = "2026-08-11";
+const REFRESHED_AT = "2026-08-17";
 const profiles = [
   ["0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1","betmoar","betmoar",{"website":"https://betmoar.fun/","x":"https://x.com/betmoardotfun","discord":"https://discord.com/invite/betmoar"},REFRESHED_AT],
   ["0x2c6624a23b16a2a69acd14c87b7fc03906870c851fa0a7b7f9d7be0fbbedea8a","Gate","gate",{"website":"https://www.gate.com/","x":"https://x.com/gate_io"}],
@@ -173,6 +173,27 @@ const profiles = [
   ["0xf2a46036a516f74ab47b1dcabe53e69a5491d59fea4e859ce6e1f3013a2813ef","Odyssey Finance","https://odyssey.finance/",{"website":"https://odyssey.finance/","x":"https://x.com/OdysseyFi"},REFRESHED_AT],
   ["0xc8203cecc9316ea33435fc5ef6ff3a962aa0ff9a419ff30991ed492fdb9e1ce1","Questflow.ai","https://blog.questflow.ai/p/your-ai-trading-assistant-just-learned",{"website":"https://questflow.ai/","x":"https://x.com/questflow"},REFRESHED_AT],
   ["0xaf151bb337c41f3f911a8e4e63aeca37287731e29c877190f82954c5eabd84f0","ELLIPAL","https://www.ellipal.com/blogs/news/ellipal-prediction-market",{"website":"https://www.ellipal.com/","x":"https://x.com/ellipal"},REFRESHED_AT],
+
+  // Second pass over current-leaderboard projects with newly verified official sites.
+  ["0x4d1a90fe58b930f41918bc590e4f42116dc669fdf179cbf9247253671b43e136","Polyburg","https://polyburg.com/polymarket-vs-alternatives",{"website":"https://polyburg.com/","x":"https://x.com/polyburg"},REFRESHED_AT],
+  ["0x01d503f560c6a80abd8cb236636c9c526fb9fa3138090ad298489acd233dab63","mass","https://mass.money/",{"website":"https://mass.money/","x":"https://x.com/MassDotMoney"},REFRESHED_AT],
+  ["0x51e19980e4c9816176b5dc4d636b0d375115855b114c329b506e36db4e36f202","traderwin.fun","https://www.traderwin.fun/",{"website":"https://www.traderwin.fun/"},REFRESHED_AT],
+  ["0x4b2408e9dbbbbcda8be868e0faca3d2028cf97f65ecc2a1c9a4f0e7722830850","PartyBet","https://x.com/partybet",{"website":"https://invite.partybet.fun/","x":"https://x.com/partybet","telegram":"https://t.me/PartyBetBot"},REFRESHED_AT],
+  ["0xfa013912a0a60d80847849369f55b9db83ddd58c1153b99233955d3618147645","K25.ai","https://k25.ai/",{"website":"https://k25.ai/"},REFRESHED_AT],
+  ["0xead019ba2c1084708d5b22f6b82eb1380d5121cb73ecb562671ee07a8bd4289b","onchaincc","https://x.com/Onchaincc",{"website":"https://onchain.cc/","x":"https://x.com/Onchaincc"},REFRESHED_AT],
+  ["0x0ce0ff81d616dd294296074250c7d83ca5728f3480f2da81208ac366e5ce6d93","Dibs","https://usedibs.app/",{"website":"https://usedibs.app/"},REFRESHED_AT],
+  ["0xd96f49de15e2d26a2050a859e67ce5591d01f9bade7c1789d9e491ca403b74e1","Whales Market","https://docs.whales.market/",{"website":"https://whales.market/","x":"https://x.com/whalesmarket"},REFRESHED_AT],
+  ["0x9fcb0e9f7961b655f78de2e1bcd5693b6d64d587f7bf46c240e8a49aa04cb96d","Tyche","https://tycheterminal.com/",{"website":"https://tycheterminal.com/"},REFRESHED_AT],
+  ["0x733a825536dd20aadb4b5ae8ed19641ad19360edb257620abec4ac8152b6e47b","OddsFantasy","https://oddsfantasy.com/",{"website":"https://oddsfantasy.com/"},REFRESHED_AT],
+  ["0x048bea420155fba5ca4f9aeaf14764f8fda2d80903fe6dbd38a4cb855904d537","Graphdex","https://graphdex.io/en/blog/prediction-market-copytrading",{"website":"https://graphdex.io/","x":"https://x.com/graphdex_io"},REFRESHED_AT],
+  ["0x7374403d2a07bbbcaa48fac1865e7c354ed947f9322f77f5e19646e4594c276e","WOWMAX","https://app.wowmax.exchange/whitelist",{"website":"https://app.wowmax.exchange/"},REFRESHED_AT],
+  ["0xc11cf13f46782e9c193f08ccc11953ccf3034637ab70afa9d7c0ac204f83ed72","NFA.Club","https://www.nfa.club/",{"website":"https://www.nfa.club/"},REFRESHED_AT],
+  ["0x46b0d69b8e057fbf095d45531626f368be300ad8fa11fffa73d5f482b3ebf4d8","Polyvaults","https://polyvaults.ai/",{"website":"https://polyvaults.ai/","x":"https://x.com/awenetwork_ai"},REFRESHED_AT],
+  ["0xfb133ca26d2d0062a2e43f8ba832a9c86d2417e977f374f207abebd979a53b72","godeye.fun","https://docs.godeye.fun/",{"website":"https://godeye.fun/","x":"https://x.com/godeyedotfun"},REFRESHED_AT],
+  ["0x4ddd4bc517af7dde205b4a3e36dc7dd394007dfa4691bbf256135272624d2ebb","Exodus","https://docs.exodus.com/exodus-hydra-reference/exodus-models",{"website":"https://www.exodus.com/","x":"https://x.com/exodus"},REFRESHED_AT],
+  ["0x927a3c430cf657a6b42ab53aa24d6621a206e42fb557dd596ba230c85e4b9daf","Polydict","https://polydict.one/",{"website":"https://polydict.one/"},REFRESHED_AT],
+  ["0xf4615412f7b331cd0b4769d0d5a87bea5c7b0c0019d1c6927659bdad877b185a","Predera","https://predera.app/",{"website":"https://predera.app/","x":"https://x.com/Predera_app"},REFRESHED_AT],
+  ["0xfd6071d659db89e8c5cd76f742b98262bad343c48d8e112fec697f28b0f6a85d","vatic.trading","https://docs.vatic.trading/introduction",{"website":"https://vatic.trading/"},REFRESHED_AT],
 ];
 
 export const BUILDER_METADATA = Object.freeze(Object.fromEntries(
